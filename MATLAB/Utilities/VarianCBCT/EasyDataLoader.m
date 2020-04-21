@@ -1,39 +1,51 @@
-function [proj, angle, geo, ximinfo, ScanXML, ReconXML] = EasyDataLoader(datafolder, varargin)
-% EASYDATALOADER Summary of this function goes here
-% Detailed explanation goes here
+function [proj, angles, geo] = EasyDataLoader(datafolder, varargin)
+% Load all dataset that are needed for reconstruction
+% Date: 2020-04-16
+% Author: Yi Du (yi.du@hotmail.com)
+% datafolder = 'E:\BigData\Edge\CBCT_Export\2020-01-09_144244';
 
-% datafolder = 'E:\BigData\Edge\CBCT_Export\2019-09-03_121026';
-%% Learn to use inputParser
-p=inputParser;
-% add optional parameters
-addParameter(p,'mode','cone',@(x)(ischar(x)&&(strcmp(x,'parallel')||strcmp(x,'cone'))));
-addParameter(p,'nVoxel',   [256;256;256],@(x)(isnumeric(x)&&all(floor(x)==x)&&max(size(x))==3));
-addParameter(p,'nDetector',[256;256]    ,@(x)(isnumeric(x)&&all(floor(x)==x)&&max(size(x))==2));
+%% Load geometry
+[geo, ScanXML] = GeometryFromXML(datafolder);
 
-%execute
-parse(p,varargin{:});
-%extract
-mode=p.Results.mode;
-nVoxel=p.Results.nVoxel;
-nDetector=p.Results.nDetector;
-
-%% Load proj and angle
-filestr = dir([datafolder filesep '**' filesep 'Proj_*.xim']);
-
-proj = [];
-angle = [];
-for ii = 1:length(filestr)
-	filename = fullfile(filestr(ii).folder, filestr(ii).name);
-	[page, rtn] = mexReadXim(filename);
-	if(~isempty(page))
-		proj(:,:,ii) = page;
-		angle(ii) = rtn;
-        ximinfo{ii} = ReadXim(filename, 0);
-	end
+%% Motion lag correcion
+thd = 0;
+if(~isempty(varargin)&&(varargin{1}))
+    thd = str2double(ScanXML.Acquisitions.Velocity.Text)...
+        ./str2double(ScanXML.Acquisitions.FrameRate.Text);
+    thd = thd *0.95;
 end
 
-%% Generate geo
+%% Load proj and angle
+[proj, angles, blk] = BatchReadXim(datafolder, thd);
 
+%% Logarithmic calculation
+proj = log(repmat(blk, [1 1 size(proj,3)])./proj);
 
+%% Mediate filtering along colume-orth
+for ii = 1:size(proj,3)
+    proj(:,:,ii) = ordfilt2(proj(:,:,ii), 5, ones(1,9));
+end
+
+% in case of abnormlies
+proj(isnan(proj)) = 0;
+proj(isinf(proj)) = 0;
+
+% all negative to zeros
+proj(proj<0) = 0;
+
+% double to single
+proj = single(proj);
+
+% degree to rad
+angles = angles/180*pi;
+
+%% Gantry Rotation correction
+% Clockwise
+if(angles(end) - angles(1)>0)
+    proj = flip(proj, 3);
+% Counter-clockwise -> Clockwise
+else
+    angles = flip(angles);
+end
 
 end
