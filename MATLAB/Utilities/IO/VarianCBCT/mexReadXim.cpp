@@ -14,6 +14,11 @@
 #include "matrix.h"
 #include "XimPara.hpp"
 
+// Purpose: To fast read .xim files 
+// Method: based ReadXim.by Fredrik Nordström 2015
+// Date: 2017.07
+// Author: Yi Du, yi.du@hotmail.com
+
 
 int cReadXim(char *XimFullFile, XimPara *XimStr, int *XimImg);
 

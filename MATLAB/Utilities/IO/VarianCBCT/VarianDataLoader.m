@@ -1,12 +1,12 @@
 function [proj,geo, angles ] = VarianDataLoader(datafolder, varargin)
-% VarianDataLoader   Loads Varian CBCT projection, geomtry and angles data
-%
+% VarianDataLoader: Loads Varian CBCT projection, geomtry and angles data
 %   Optional parameter: Motion lag correction. Default True. 
 %
 % Load all dataset that are needed for reconstruction
+% Tested on TrueBeam 2.5 and 2.7
 % Date: 2020-04-16
 % Author: Yi Du (yi.du@hotmail.com)
-% datafolder = 'E:\BigData\Edge\CBCT_Export\2020-01-09_144244';
+% datafolder = 'D:\Edge\CBCT_Export\2020-01-09_144244';
 
 %% Load geometry
 [geo, ScanXML] = GeometryFromXML(datafolder);
