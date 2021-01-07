@@ -1,4 +1,4 @@
-function [res] = FISTA(proj,geo,angles,niter,varargin)
+function [res,qualMeasOut] = FISTA(proj,geo,angles,niter,varargin)
 % FISTA is a quadratically converging algorithm.
 
 % 'hyper': This parameter should approximate the largest 
@@ -8,10 +8,19 @@ function [res] = FISTA(proj,geo,angles,niter,varargin)
 %               geo.nVoxel = [64,64,64]'    ,      hyper (approx=) 2.e8
 %               geo.nVoxel = [512,512,512]' ,      hyper (approx=) 2.e4
 %          Default: 2.e8
+% 'init':    Describes diferent initialization techniques.
+%             •  'none'     : Initializes the image to zeros (default)
+%             •  'FDK'      : intializes image to FDK reconstrucition
 % 'tviter':  Number of iterations of Im3ddenoise to use. Default: 20
 % 'lambda':  Multiplier for the tvlambda used, which is proportional to 
 %            L (hyper). Default: 0.1
 % 'verbose': get feedback or not. Default: 1
+%
+% 'QualMeas'     Asks the algorithm for a set of quality measurement
+%                parameters. Input should contain a cell array of desired
+%                quality measurement names. Example: {'CC','RMSE','MSSIM'}
+%                These will be computed in each iteration.
+
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % This file is part of the TIGRE Toolbox
@@ -28,23 +37,33 @@ function [res] = FISTA(proj,geo,angles,niter,varargin)
 % Codes:              https://github.com/CERN/TIGRE/
 % Coded by:           Ander Biguri, Reuben Lindroos
 %--------------------------------------------------------------------------
-[verbose,tviter,hyper,lambda]=parse_inputs(proj,geo,angles,varargin);
-res = zeros(geo.nVoxel','single');
+[verbose,res,tviter,hyper,lambda,QualMeasOpts]=parse_inputs(proj,geo,angles,varargin);
+%res = zeros(geo.nVoxel','single');
+measurequality=~isempty(QualMeasOpts);
+
+qualMeasOut=zeros(length(QualMeasOpts),niter);
+
 x_rec = res;
 L = hyper;
 bm = 1/L;
 t = 1;
 for ii = 1:niter
+    res0 = res;
     if (ii==1);tic;end
     % gradient descent step
-    res = res + bm * 2 * Atb(proj - Ax(res,geo,angles, 'ray-voxel'), geo, angles, 'matched');
+    res = res + bm * 2 * Atb(proj - Ax(res,geo,angles, 'Siddon'), geo, angles, 'matched');
     lambdaforTV = 2* bm* lambda;
     x_recold = x_rec;
     x_rec = im3DDenoise(res,'TV',tviter,1/lambdaforTV);  
     told = t;
     t = ( 1+sqrt(1+4*t*t) ) / 2;
     res= x_rec + (told-1)/t * (x_rec - x_recold);
-    if (ii==1)&&(verbose==1);
+
+    if measurequality
+        qualMeasOut(:,ii)=Measure_Quality(res0,res,QualMeasOpts);
+    end
+
+    if (ii==1)&&(verbose==1)
         expected_time=toc*niter;
         disp('FISTA');
         disp(['Expected duration  :    ',secs2hms(expected_time)]);
@@ -56,8 +75,8 @@ end
 
 end
 %% Parse inputs
-function [verbose,tviter,hyper,lambda]=parse_inputs(proj,geo,angles,argin)
-opts=     {'lambda','tviter','verbose','hyper'};
+function [verbose,f0,tviter,hyper,lambda,QualMeasOpts]=parse_inputs(proj,geo,angles,argin)
+opts = {'lambda','init','tviter','verbose','hyper','qualmeas'};
 defaults=ones(length(opts),1);
 % Check inputs
 nVarargs = length(argin);
@@ -103,34 +122,62 @@ for ii=1:length(opts)
                 warning('TIGRE: Verbose mode not available for older versions than MATLAB R2014b');
                 verbose=false;
             end
-            % % % % % % % hyperparameter, LAMBDA
+        % Initial image
+        %  =========================================================================
+        case 'init'
+            if default || strcmp(val,'none')
+                f0=zeros(geo.nVoxel','single');
+            else
+                if strcmp(val,'FDK')
+                    f0=FDK(proj, geo, angles);
+                else
+                    error('TIGRE:FISTA:InvalidInput','Invalid init')
+                end
+            end
+        % % % % % % % hyperparameter, LAMBDA
         case 'lambda'
             if default
                 lambda=0.1;
             elseif length(val)>1 || ~isnumeric( val)
-                error('TIGRE:OS_SART:InvalidInput','Invalid lambda')
+                error('TIGRE:FISTA:InvalidInput','Invalid lambda')
             else
                 lambda=val;
             end
+        % hyperparameter
+        % ==========================================================
         case 'hyper'
             if default
                 hyper = 2.e8;
             elseif length(val)>1 || ~isnumeric( val)
-                error('TIGRE:OS_SART:InvalidInput','Invalid lambda')
+                error('TIGRE:FISTA:InvalidInput','Invalid lambda')
             else 
                 hyper = val;
             end
+        % Number of iterations of TV
+        %  =========================================================================
         case 'tviter'
             if default
                 tviter = 20;
             elseif length(val)>1 || ~isnumeric( val)
-                error('TIGRE:OS_SART:InvalidInput','Invalid lambda')
+                error('TIGRE:FISTA:InvalidInput','Invalid lambda')
             else
                 tviter = val;
             end
+        % Image Quality Measure
+        %  =========================================================================
+        case 'qualmeas'
+            if default
+                QualMeasOpts={};
+            else
+                if iscellstr(val)
+                    QualMeasOpts=val;
+                else
+                    error('TIGRE:FISTA:InvalidInput','Invalid quality measurement parameters');
+                end
+            end
                
         otherwise
-            error('TIGRE:OS_SART:InvalidInput',['Invalid input name:', num2str(opt),'\n No such option in OS_SART_CBCT()']);
+            error('TIGRE:FISTA:InvalidInput',['Invalid input name:', num2str(opt),'\n No such option in FISTA()']);
     end
 end
 end

@@ -59,7 +59,7 @@ do { \
         cudaError_t __err = cudaGetLastError(); \
         if (__err != cudaSuccess) { \
                 mexPrintf("%s \n",msg);\
-                mexErrMsgIdAndTxt("TIGRE:Ax:Siddon",cudaGetErrorString(__err));\
+                mexErrMsgIdAndTxt("Ax:Siddon_projection",cudaGetErrorString(__err));\
         } \
 } while (0)
     
@@ -149,6 +149,10 @@ __global__ void kernelPixelDetector( Geometry geo,
     ray.x=pixel1D.x-source.x;
     ray.y=pixel1D.y-source.y;
     ray.z=pixel1D.z-source.z;
+    float eps=0.001;
+    ray.x=(fabsf(ray.x)<eps)? 0 : ray.x;
+    ray.y=(fabsf(ray.y)<eps)? 0 : ray.y; 
+    ray.z=(fabsf(ray.z)<eps)? 0 : ray.z; 
     // This variables are ommited because
     // bx,by,bz ={0,0,0}
     // dx,dy,dz ={1,1,1}
@@ -201,11 +205,15 @@ __global__ void kernelPixelDetector( Geometry geo,
     
     // get intersection point N1. eq(20-21) [(also eq 9-10)]
     float ax,ay,az;
-    ax=(source.x<pixel1D.x)?  __fdividef(imin-source.x,ray.x+0.000000000001f) :  __fdividef(imax-source.x,ray.x+0.000000000001f);
-    ay=(source.y<pixel1D.y)?  __fdividef(jmin-source.y,ray.y+0.000000000001f) :  __fdividef(jmax-source.y,ray.y+0.000000000001f);
-    az=(source.z<pixel1D.z)?  __fdividef(kmin-source.z,ray.z+0.000000000001f) :  __fdividef(kmax-source.z,ray.z+0.000000000001f);
+    ax=(source.x<pixel1D.x)?  __fdividef(imin-source.x,ray.x) :  __fdividef(imax-source.x,ray.x);
+    ay=(source.y<pixel1D.y)?  __fdividef(jmin-source.y,ray.y) :  __fdividef(jmax-source.y,ray.y);
+    az=(source.z<pixel1D.z)?  __fdividef(kmin-source.z,ray.z) :  __fdividef(kmax-source.z,ray.z);
     
-    
+
+    // If its Infinite (i.e. ray is parallel to axis), make sure its positive
+    ax=(isinf(ax))? abs(ax) : ax;
+    ay=(isinf(ay))? abs(ay) : ay;
+    az=(isinf(az))? abs(az) : az;    
     
     // get index of first intersection. eq (26) and (19)
     int i,j,k;
@@ -225,7 +233,6 @@ __global__ void kernelPixelDetector( Geometry geo,
     iu=(source.x< pixel1D.x)? 1.0f : -1.0f;
     ju=(source.y< pixel1D.y)? 1.0f : -1.0f;
     ku=(source.z< pixel1D.z)? 1.0f : -1.0f;
-    
     float maxlength=__fsqrt_rd(ray.x*ray.x*geo.dVoxelX*geo.dVoxelX+ray.y*ray.y*geo.dVoxelY*geo.dVoxelY+ray.z*ray.z*geo.dVoxelZ*geo.dVoxelZ);
     float sum=0.0f;
     unsigned int Np=(imax-imin+1)+(jmax-jmin+1)+(kmax-kmin+1); // Number of intersections
@@ -233,6 +240,7 @@ __global__ void kernelPixelDetector( Geometry geo,
     i+=0.5f;
     j+=0.5f;
     k+=0.5f;
+
     for (unsigned int ii=0;ii<Np;ii++){
         if (ax==aminc){
             sum+=(ax-ac)*tex3D<float>(tex, i, j, k);
@@ -271,19 +279,21 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
     // 1.-All available devices are usable by this code
     // 2.-All available devices are equal, they are the same machine (warning thrown)
     int dev;
-    char * devicenames;
+    const int devicenamelength = 256;  // The length 256 is fixed by spec of cudaDeviceProp::name
+    char devicename[devicenamelength];
     cudaDeviceProp deviceProp;
     
     for (dev = 0; dev < deviceCount; dev++) {
         cudaSetDevice(dev);
         cudaGetDeviceProperties(&deviceProp, dev);
         if (dev>0){
-            if (strcmp(devicenames,deviceProp.name)!=0){
+            if (strcmp(devicename,deviceProp.name)!=0){
                 mexWarnMsgIdAndTxt("Ax:GPUselect","Detected one (or more) different GPUs.\n This code is not smart enough to separate the memory GPU wise if they have different computational times or memory limits.\n First GPU parameters used. If the code errors you might need to change the way GPU selection is performed. \n Siddon_projection.cu line 275.");
                 break;
             }
         }
-        devicenames=deviceProp.name;
+        memset(devicename, 0, devicenamelength);
+        strcpy(devicename, deviceProp.name);
     }
     
     
@@ -297,27 +307,17 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
     size_t mem_proj=                  (unsigned long long)geo.nDetecU*(unsigned long long)geo.nDetecV*sizeof(float);
     
     // Does everything fit in the GPUs?
-    bool fits_in_memory=false;
+    const bool fits_in_memory = mem_image+2*PROJ_PER_BLOCK*mem_proj<mem_GPU_global;
     unsigned int splits=1;
-    Geometry * geoArray;
-    
-    
-    if (mem_image+2*PROJ_PER_BLOCK*mem_proj<mem_GPU_global){// yes it does
-        fits_in_memory=true;
-        geoArray=(Geometry*)malloc(sizeof(Geometry));
-        geoArray[0]=geo;
-    }
-    else{// Nope nope.
-        fits_in_memory=false; // Oh dear.
+    if (!fits_in_memory) {
+        // Nope nope.
         // approx free memory we have. We already have left some extra 5% free for internal stuff
         // we need a second projection memory to combine multi-GPU stuff.
         size_t mem_free=mem_GPU_global-4*PROJ_PER_BLOCK*mem_proj;
-        
-        
         splits=mem_image/mem_free+1;// Ceil of the truncation
-        geoArray=(Geometry*)malloc(splits*sizeof(Geometry));
-        splitImage(splits,geo,geoArray,nangles);
     }
+    Geometry* geoArray = (Geometry*)malloc(splits*sizeof(Geometry));
+    splitImage(splits,geo,geoArray,nangles);
     
     // Allocate axuiliary memory for projections on the GPU to accumulate partial results
     float ** dProjection_accum;
@@ -347,16 +347,17 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
     }
     
     
-    //Pagelock memory for syncronous copy.
+    //Pagelock memory for synchronous copy.
     // Lets try to make the host memory pinned:
-    // We laredy queried the GPU and assuemd they are the same, thus shoudl have the same attributes.
+    // We laredy queried the GPU and assuemd they are the same, thus should have the same attributes.
     int isHostRegisterSupported;
     cudaDeviceGetAttribute(&isHostRegisterSupported,cudaDevAttrHostRegisterSupported,0);
     // empirical testing shows that when the image split is smaller than 1 (also implies the image is not very big), the time to
-    // pin the memory is greater than the lost time in Syncronously launching the memcpys. This is only worth it when the image is too big.
+    // pin the memory is greater than the lost time in Synchronously launching the memcpys. This is only worth it when the image is too big.
     if (isHostRegisterSupported & (splits>1 |deviceCount>1)){
         cudaHostRegister(img, (size_t)geo.nVoxelX*(size_t)geo.nVoxelY*(size_t)geo.nVoxelZ*(size_t)sizeof(float),cudaHostRegisterPortable);
     }
+    cudaCheckErrors("Error pinning memory");
 
     
     
@@ -364,7 +365,7 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
     Point3D source, deltaU, deltaV, uvOrigin;
     Point3D* projParamsArrayHost;
     cudaMallocHost((void**)&projParamsArrayHost,4*PROJ_PER_BLOCK*sizeof(Point3D));
-    
+    cudaCheckErrors("Error allocating auxiliary constant memory");
     
     // Create Streams for overlapping memcopy and compute
     int nStreams=deviceCount*2;
@@ -383,7 +384,7 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
     int nangles_device=(nangles+deviceCount-1)/deviceCount;
     int nangles_last_device=(nangles-(deviceCount-1)*nangles_device);
     unsigned int noOfKernelCalls = (nangles_device+PROJ_PER_BLOCK-1)/PROJ_PER_BLOCK;  // We'll take care of bounds checking inside the loop if nalpha is not divisible by PROJ_PER_BLOCK
-    unsigned int last_device_blocks= (nangles_last_device+PROJ_PER_BLOCK-1)/PROJ_PER_BLOCK; // we will use this in the memory management.
+    unsigned int noOfKernelCallsLastDev = (nangles_last_device+PROJ_PER_BLOCK-1)/PROJ_PER_BLOCK; // we will use this in the memory management.
     int projection_this_block;
     cudaTextureObject_t *texImg = new cudaTextureObject_t[deviceCount];
     cudaArray **d_cuArrTex = new cudaArray*[deviceCount];
@@ -394,7 +395,7 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
         
         
         size_t linear_idx_start;
-        //First one shoudl always be  the same size as all the rest but the last
+        //First one should always be  the same size as all the rest but the last
         linear_idx_start= (size_t)sp*(size_t)geoArray[0].nVoxelX*(size_t)geoArray[0].nVoxelY*(size_t)geoArray[0].nVoxelZ;
         
         
@@ -411,10 +412,9 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
         dim3 block(divU,divV,PROJ_PER_BLOCK);
         
         unsigned int proj_global;
-        unsigned int i;
         // Now that we have prepared the image (piece of image) and parameters for kernels
         // we project for all angles.
-        for ( i=0; i<noOfKernelCalls; i++){
+        for (unsigned int i=0; i<noOfKernelCalls; i++) {
             for (dev=0;dev<deviceCount;dev++){
                 cudaSetDevice(dev);
                 
@@ -444,92 +444,112 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
                 cudaCheckErrors("kernel fail");
                 kernelPixelDetector<<<grid,block,0,stream[dev*2]>>>(geoArray[sp],dProjection[(i%2)+dev*2],i,nangles_device,texImg[dev]);
             }
+
+
             // Now that the computation is happening, we need to either prepare the memory for
-            // combining of the projections (splits>1) or start removing previous results.
-            
-            // How many projections are we dealing with in the current block??
+            // combining of the projections (splits>1) and start removing previous results.
             
             
             // If our image does not fit in memory then we need to make sure we accumulate previous results too.
-            if( !fits_in_memory && sp>0 ){
-                // First, grab previous results and put them in the auxiliary variable
-                for (dev = 0; dev < deviceCount; dev++){
-                    projection_this_block=PROJ_PER_BLOCK;
+            // This is done in 2 steps: 
+            // 1)copy previous results back into GPU 
+            // 2)accumulate with current results
+            // The code to take them out is the same as when there are no splits needed
+            if( !fits_in_memory&&sp>0)
+            {
+                // 1) grab previous results and put them in the auxiliary variable dProjection_accum
+                for (dev = 0; dev < deviceCount; dev++)
+                {
                     cudaSetDevice(dev);
-                    // this werid code makes sure we dont access bad memory. Its necesary for deviceCount>2
-                    if (dev+1==deviceCount){ // if its the last device
-                        if(i+1==last_device_blocks) // If we are in the last block of the last device, how many projections?
-                            projection_this_block=nangles_last_device-(last_device_blocks-1)*PROJ_PER_BLOCK;
-                        if(i+1>last_device_blocks) // As the last device can have less blocs, i may be over it.
-                            break;
-                    }else{
-                        if(i+1==noOfKernelCalls) // if its not the last device, it can still be the lat block
-                            projection_this_block=nangles_device-(noOfKernelCalls-1)*PROJ_PER_BLOCK;
-                    }
-                    cudaMemcpyAsync(dProjection_accum[(i%2)+dev*2], result[i*PROJ_PER_BLOCK+dev*nangles_device], projection_this_block*geo.nDetecV*geo.nDetecU*sizeof(float), cudaMemcpyHostToDevice,stream[dev*2+1]);
+                    //Global index of FIRST projection on this set on this GPU
+                    proj_global=i*PROJ_PER_BLOCK+dev*nangles_device;
+                    if(proj_global>=nangles) 
+                        break;
+
+                    // Unless its the last projection set, we have PROJ_PER_BLOCK angles. Otherwise...
+                    if(i+1==noOfKernelCalls) //is it the last block?
+                        projection_this_block=min(nangles_device-(noOfKernelCalls-1)*PROJ_PER_BLOCK, //the remaining angles that this GPU had to do (almost never PROJ_PER_BLOCK)
+                                                  nangles-proj_global);                              //or whichever amount is left to finish all (this is for the last GPU)
+                    else
+                        projection_this_block=PROJ_PER_BLOCK;
+
+                    cudaMemcpyAsync(dProjection_accum[(i%2)+dev*2], result[proj_global], projection_this_block*geo.nDetecV*geo.nDetecU*sizeof(float), cudaMemcpyHostToDevice,stream[dev*2+1]);
                 }
-                // Second, take the results from current compute call and add it to the code in execution.
-                for (dev = 0; dev < deviceCount; dev++){
-                    
-                    projection_this_block=PROJ_PER_BLOCK;
+                //  2) take the results from current compute call and add it to the code in execution.
+                for (dev = 0; dev < deviceCount; dev++)
+                {
                     cudaSetDevice(dev);
-                    // this werid code makes sure we dont access bad memory. Its necesary for deviceCount>2
-                    if (dev+1==deviceCount){ // if its the last device
-                        if(i+1==last_device_blocks) // If we are in the last block of the last device, how many projections?
-                            projection_this_block=nangles_last_device-(last_device_blocks-1)*PROJ_PER_BLOCK;
-                        if(i+1>last_device_blocks) // As the last device can have less blocs, i may be over it.
-                            break;
-                    }else{
-                        if(i+1==noOfKernelCalls) // if its not the last device, it can still be the lat block
-                            projection_this_block=nangles_device-(noOfKernelCalls-1)*PROJ_PER_BLOCK;
-                    }
+                    //Global index of FIRST projection on this set on this GPU
+                    proj_global=i*PROJ_PER_BLOCK+dev*nangles_device;
+                    if(proj_global>=nangles) 
+                        break;
+
+                    // Unless its the last projection set, we have PROJ_PER_BLOCK angles. Otherwise...
+                    if(i+1==noOfKernelCalls) //is it the last block?
+                        projection_this_block=min(nangles_device-(noOfKernelCalls-1)*PROJ_PER_BLOCK, //the remaining angles that this GPU had to do (almost never PROJ_PER_BLOCK)
+                                                  nangles-proj_global);                              //or whichever amount is left to finish all (this is for the last GPU)
+                    else
+                        projection_this_block=PROJ_PER_BLOCK;
+
                     cudaStreamSynchronize(stream[dev*2+1]); // wait until copy is finished
                     vecAddInPlace<<<(geo.nDetecU*geo.nDetecV*projection_this_block+MAXTREADS-1)/MAXTREADS,MAXTREADS,0,stream[dev*2]>>>(dProjection[(i%2)+dev*2],dProjection_accum[(i%2)+dev*2],(unsigned long)geo.nDetecU*geo.nDetecV*projection_this_block);
                 }
-            }
-            
+            } // end accumulation case, where the image needs to be split 
+
             // Now, lets get out the projections from the previous execution of the kernels.
             if (i>0){
-                for (dev = 0; dev < deviceCount; dev++){
-                    projection_this_block=PROJ_PER_BLOCK;
+                for (dev = 0; dev < deviceCount; dev++)
+                {
                     cudaSetDevice(dev);
-                    if (dev+1==deviceCount && i+1==noOfKernelCalls && last_device_blocks!=noOfKernelCalls){ 
-                            projection_this_block=nangles_last_device-(last_device_blocks-1)*PROJ_PER_BLOCK;
+                    //Global index of FIRST projection on previous set on this GPU
+                    proj_global=(i-1)*PROJ_PER_BLOCK+dev*nangles_device;
+                    if (dev+1==deviceCount) {    //is it the last device?
+                        // projections assigned to this device is >=nangles_device-(deviceCount-1) and < nangles_device
+                        if (i-1 < noOfKernelCallsLastDev) {
+                            // The previous set(block) was not empty.
+                            projection_this_block=min(PROJ_PER_BLOCK, nangles-proj_global);
+                        }
+                        else {
+                            // The previous set was empty.
+                            // This happens if deviceCount > PROJ_PER_BLOCK+1.
+                            // e.g. PROJ_PER_BLOCK = 9, deviceCount = 11, nangles = 199.
+                            // e.g. PROJ_PER_BLOCK = 1, deviceCount =  3, nangles =   7.
+                            break;
+                        }
                     }
-                    cudaMemcpyAsync(result[(i-1)*PROJ_PER_BLOCK+dev*nangles_device], dProjection[(int)(!(i%2))+dev*2],  projection_this_block*geo.nDetecV*geo.nDetecU*sizeof(float), cudaMemcpyDeviceToHost,stream[dev*2+1]);
+                    else {
+                        projection_this_block=PROJ_PER_BLOCK;
+                    }
+                    cudaMemcpyAsync(result[proj_global], dProjection[(int)(!(i%2))+dev*2],  projection_this_block*geo.nDetecV*geo.nDetecU*sizeof(float), cudaMemcpyDeviceToHost,stream[dev*2+1]);
                 }
             }
             // Make sure Computation on kernels has finished before we launch the next batch.
             for (dev = 0; dev < deviceCount; dev++){
                 cudaSetDevice(dev);
                 cudaStreamSynchronize(stream[dev*2]);
-            }   
-        }// END angles loop (i)
-        
-        
-        // We still have the last one to get out, do that one
-        
-        int projection_this_block;
-        for (dev = 0; dev < deviceCount; dev++){
-            projection_this_block=PROJ_PER_BLOCK;
-            cudaSetDevice(dev);
-            // this werid code makes sure we dont access bad memory. Its necesary for deviceCount>2
-            if (dev+1==deviceCount){ // if its the last device
-                projection_this_block=nangles_last_device-(last_device_blocks-1)*PROJ_PER_BLOCK;
-                if(i>last_device_blocks) // As the last device can have less blocs, i may be over it.
-                    break;
-            }else{
-               projection_this_block=nangles_device-(noOfKernelCalls-1)*PROJ_PER_BLOCK;
             }
-            cudaDeviceSynchronize();
-            cudaCheckErrors("Fail memcopy fail");
-            cudaMemcpyAsync(result[(i-1)*PROJ_PER_BLOCK+dev*nangles_device], dProjection[(int)(!(i%2))+dev*2], projection_this_block*geo.nDetecV*geo.nDetecU*sizeof(float), cudaMemcpyDeviceToHost,stream[dev*2+1]);
         }
-        // Free memory for the next piece of image
-       
+        
+        
+         // We still have the last set of projections to get out of GPUs
+        for (dev = 0; dev < deviceCount; dev++)
+        {
+            cudaSetDevice(dev);
+            //Global index of FIRST projection on this set on this GPU
+            proj_global=(noOfKernelCalls-1)*PROJ_PER_BLOCK+dev*nangles_device;
+            if(proj_global>=nangles) 
+                break;
+            // How many projections are left here?
+            projection_this_block=min(nangles_device-(noOfKernelCalls-1)*PROJ_PER_BLOCK, //the remaining angles that this GPU had to do (almost never PROJ_PER_BLOCK)
+                                      nangles-proj_global);                              //or whichever amount is left to finish all (this is for the last GPU)
+
+            cudaDeviceSynchronize(); //Not really necesary, but just in case, we los nothing. 
+            cudaCheckErrors("Error at copying the last set of projections out (or in the previous copy)");
+            cudaMemcpyAsync(result[proj_global], dProjection[(int)(!(noOfKernelCalls%2))+dev*2], projection_this_block*geo.nDetecV*geo.nDetecU*sizeof(float), cudaMemcpyDeviceToHost,stream[dev*2+1]);
+        }
+        // Make sure everyone has done their bussiness before the next image split:
         cudaDeviceSynchronize();
-    }//END image splits loop
-     
+    } // End image split loop.
     
     cudaCheckErrors("Main loop  fail");
     ///////////////////////////////////////////////////////////////////////
@@ -539,6 +559,8 @@ int siddon_ray_projection(float  *  img, Geometry geo, float** result,float cons
             cudaDestroyTextureObject(texImg[dev]);
             cudaFreeArray(d_cuArrTex[dev]);
     }
+    delete[] texImg; texImg = 0;
+    delete[] d_cuArrTex; d_cuArrTex = 0;
     // Freeing Stage
     for (dev = 0; dev < deviceCount; dev++){
         cudaSetDevice(dev);
@@ -651,6 +673,7 @@ void splitImage(unsigned int splits,Geometry geo,Geometry* geoArray, unsigned in
  * it does saves about 30% of each of the kernel calls. Thats something!
  **/
 void computeDeltas_Siddon(Geometry geo,int i, Point3D* uvorigin, Point3D* deltaU, Point3D* deltaV, Point3D* source){
+    
     Point3D S;
     S.x=geo.DSO[i];
     S.y=0;
@@ -687,7 +710,7 @@ void computeDeltas_Siddon(Geometry geo,int i, Point3D* uvorigin, Point3D* deltaU
     rollPitchYaw(geo,i,&P);
     rollPitchYaw(geo,i,&Pu0);
     rollPitchYaw(geo,i,&Pv0);
-    //Now ltes translate the points where they shoudl be:
+    //Now ltes translate the points where they should be:
     P.x=P.x-(geo.DSD[i]-geo.DSO[i]);
     Pu0.x=Pu0.x-(geo.DSD[i]-geo.DSO[i]);
     Pv0.x=Pv0.x-(geo.DSD[i]-geo.DSO[i]);
@@ -840,7 +863,7 @@ void checkFreeMemory(int deviceCount,size_t *mem_GPU_global){
         cudaMemGetInfo(&memfree,&memtotal);
         if(dev==0) *mem_GPU_global=memfree;
         if(memfree<memtotal/2){
-            mexErrMsgIdAndTxt("tvDenoise:tvdenoising:GPU","One (or more) of your GPUs is being heavily used by another program (possibly graphics-based).\n Free the GPU to run TIGRE\n");
+            mexErrMsgIdAndTxt("Ax:Siddon_projection:GPUmemory","One (or more) of your GPUs is being heavily used by another program (possibly graphics-based).\n Free the GPU to run TIGRE\n");
         }
         cudaCheckErrors("Check mem error");
         

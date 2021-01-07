@@ -106,7 +106,7 @@ class FISTA(IterativeReconAlg):
 
     def __init__(self, proj, geo, angles, niter, **kwargs):
 
-        # Dont precompute W and V
+        # Don't precompute W and V
         kwargs.update(dict(W=None,
                            V=None,
                            ))
@@ -134,7 +134,7 @@ class FISTA(IterativeReconAlg):
         VERBOSE:
          for j in range(angleblocks):
              angle = np.array([alpha[j]], dtype=np.float32)
-             proj_err = proj[angle_index[j]] - Ax(res, geo, angle, 'ray-voxel')
+             proj_err = proj[angle_index[j]] - Ax(res, geo, angle, 'Siddon')
              backprj = Atb(proj_err, geo, angle, 'FDK')
              res += backprj
              res[res<0]=0
@@ -184,7 +184,7 @@ fista = decorator(FISTA, name='FISTA')
 class ISTA(FISTA):
     __doc__ = FISTA.__doc__
 
-    def __int__(self, proj, geo, angles, niter, **kwargs):
+    def __init__(self, proj, geo, angles, niter, **kwargs):
         FISTA.__init__(self, proj, geo, angles, niter, **kwargs)
 
     def run_main_iter(self):

@@ -50,22 +50,19 @@
 #include <cuda.h>
 #include "voxel_backprojection.hpp"
 #include "voxel_backprojection_parallel.hpp"
-#include <stdio.h>
-#include "errors.hpp"
+
+#include "TIGRE_common.hpp"
 #include <math.h>
 
 // https://stackoverflow.com/questions/16282136/is-there-a-cuda-equivalent-of-perror
-inline int cudaCheckErrors(const char * msg)
-{
-   cudaError_t __err = cudaGetLastError();
-   if (__err != cudaSuccess)
-   {
-      printf("CUDA:voxel_backprojection_par:%s:%s\n",msg, cudaGetErrorString(__err));
-      cudaDeviceReset();
-      return 1;
-   }
-   return 0;
-}
+#define cudaCheckErrors(msg) \
+do { \
+        cudaError_t __err = cudaGetLastError(); \
+        if (__err != cudaSuccess) { \
+                mexPrintf("%s \n",msg);\
+                mexErrMsgIdAndTxt("CBCT:CUDA:Atb",cudaGetErrorString(__err));\
+        } \
+} while (0)
     
     
 #define MAXTREADS 1024
@@ -161,8 +158,8 @@ __global__ void kernelPixelBackprojection_parallel(const Geometry geo, float* im
     unsigned long indX = blockIdx.x * blockDim.x + threadIdx.x;
     // unsigned long startIndZ = blockIdx.z * blockDim.z + threadIdx.z;  // This is only STARTING z index of the column of voxels that the thread will handle
     unsigned long startIndZ = blockIdx.z * VOXELS_PER_THREAD + threadIdx.z;  // This is only STARTING z index of the column of voxels that the thread will handle
-    //Make sure we dont go out of bounds
-    if (indX>=geo.nVoxelX | indY>=geo.nVoxelY |startIndZ>=geo.nVoxelZ)
+    //Make sure we don't go out of bounds
+    if (indX>=geo.nVoxelX || indY>=geo.nVoxelY || startIndZ>=geo.nVoxelZ)
         return;
     
     // We'll keep a local auxiliary array of values of a column of voxels that this thread will update
@@ -247,7 +244,11 @@ __global__ void kernelPixelBackprojection_parallel(const Geometry geo, float* im
             
             // Get Value in the computed (U,V) and multiply by the corresponding weigth.
             // indAlpha is the ABSOLUTE number of projection in the projection array (NOT the current number of projection set!)
+#if IS_FOR_MATLAB_TIGRE
             voxelColumn[colIdx]+=tex3D<float>(tex, v+0.5f, u+0.5f ,indAlpha+0.5f);
+#else
+            voxelColumn[colIdx]+=tex3D<float>(tex, u+0.5f, v+0.5f ,indAlpha+0.5f);
+#endif
             
         }  // END iterating through column of voxels
         
@@ -299,15 +300,15 @@ int voxel_backprojection_parallel(float  *  projections, Geometry geo, float* re
         
         
     }
-    //Pagelock memory for syncronous copy.
+    //Pagelock memory for synchronous copy.
     // Lets try to make the host memory pinned:
-    // We laredy queried the GPU and assuemd they are the same, thus shoudl have the same attributes.
+    // We laredy queried the GPU and assuemd they are the same, thus should have the same attributes.
     int isHostRegisterSupported;
     cudaDeviceGetAttribute(&isHostRegisterSupported,cudaDevAttrHostRegisterSupported,0);
     if (isHostRegisterSupported){
         cudaHostRegister(projections, (size_t)geo.nDetecU*(size_t)geo.nDetecV*(size_t)nalpha*(size_t)sizeof(float),cudaHostRegisterPortable);
     }
-    if(cudaCheckErrors("Error pinning memory")){return 1;}
+    cudaCheckErrors("Error pinning memory");
     
     
     // Allocate result image memory
@@ -315,7 +316,7 @@ int voxel_backprojection_parallel(float  *  projections, Geometry geo, float* re
     float* dimage;
     cudaMalloc((void**)&dimage, num_bytes);
     cudaMemset(dimage,0,num_bytes);
-    if(cudaCheckErrors("cudaMalloc fail")){return 1;}
+    cudaCheckErrors("cudaMalloc fail");
     
     
     Point3D* projParamsArrayHostParallel;
@@ -364,7 +365,7 @@ int voxel_backprojection_parallel(float  *  projections, Geometry geo, float* re
         //Get the linear index where the current memory chunk starts.
         
         proj_linear_idx_start=proj_block_split*max((current_proj_split_size+proj_split_overlap_number-1)/proj_split_overlap_number,PROJ_PER_KERNEL)*(unsigned long long)geo.nDetecU*(unsigned long long)geo.nDetecV;
-        //Store resutl
+        //Store result
         proj_split_size[proj_block_split]=current_proj_overlap_split_size;
         partial_projection[proj_block_split]=&projections[proj_linear_idx_start];
         
@@ -469,7 +470,7 @@ int voxel_backprojection_parallel(float  *  projections, Geometry geo, float* re
     }
     cudaDeviceSynchronize();
     cudaMemcpy(result, dimage, num_bytes, cudaMemcpyDeviceToHost);
-    if(cudaCheckErrors("cudaMemcpy result fail")){return 1;}
+    cudaCheckErrors("cudaMemcpy result fail");
     
     free(partial_projection);
     free(proj_split_size);
@@ -554,10 +555,12 @@ void computeDeltasCubeParallel(Geometry geo, int i, Point3D* xyzorigin, Point3D*
 }  // END computeDeltasCube
 void CreateTextureParallel(float* projectiondata,Geometry geo,cudaArray** d_cuArrTex,unsigned int nangles, cudaTextureObject_t *texImage,cudaStream_t* stream, bool alloc)
 {
-    //size_t size_image=geo.nVoxelX*geo.nVoxelY*geo.nVoxelZ;
-        
         //cudaArray Descriptor
-        const cudaExtent extent = make_cudaExtent(geo.nDetecV, geo.nDetecU, nangles);
+#if IS_FOR_MATLAB_TIGRE
+        const cudaExtent extent =make_cudaExtent(geo.nDetecV, geo.nDetecU, nangles);
+#else
+        const cudaExtent extent =make_cudaExtent(geo.nDetecU, geo.nDetecV, nangles);
+#endif
         cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
         //cuda Array
         if (alloc){

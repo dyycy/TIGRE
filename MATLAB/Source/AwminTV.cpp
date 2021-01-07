@@ -60,7 +60,7 @@ Codes  : https://github.com/CERN/TIGRE
 void mexFunction(int  nlhs , mxArray *plhs[],
         int nrhs, mxArray const *prhs[])
 {
-///////// First check if the amount of imputs is rigth.    
+///////// First check if the amount of imputs is right.    
     int maxIter;
     float alpha;
     if (nrhs==1){
@@ -77,11 +77,11 @@ void mexFunction(int  nlhs , mxArray *plhs[],
      size_t mrows = mxGetM(prhs[1]);
      size_t ncols = mxGetN(prhs[1]);
      if (mrows!=1 || ncols !=1)
-        mexErrMsgIdAndTxt("err", "POCS parameters shoudl be 1x1");
+        mexErrMsgIdAndTxt("err", "POCS parameters should be 1x1");
      mrows = mxGetM(prhs[2]);
      ncols = mxGetN(prhs[2]);
      if (mrows!=1 || ncols !=1)
-        mexErrMsgIdAndTxt("err", "POCS parameters shoudl be 1x1");
+        mexErrMsgIdAndTxt("err", "POCS parameters should be 1x1");
       alpha= (float)(mxGetScalar(prhs[1]));
       maxIter=(int)floor(mxGetScalar(prhs[2])+0.5);
     }
@@ -90,22 +90,24 @@ void mexFunction(int  nlhs , mxArray *plhs[],
     // First input should be x from (Ax=b), or the image.
     mxArray const * const image = prhs[0];
     mwSize const numDims = mxGetNumberOfDimensions(image);
+    mwSize third_dim = 1;
     
-    // Image should be dim 3
-    if (numDims!=3){
-        mexErrMsgIdAndTxt("err", "Image is not 3D");
-    }
     // Now that input is ok, parse it to C data types.
     float  *  img = static_cast<float  *>(mxGetData(image));
     const mwSize *size_img= mxGetDimensions(image); //get size of image
 
+    // Image should be dim 3
+    if (numDims==3){
+        third_dim = size_img[2];
+    }
     
     // Allocte output image
-    plhs[0] = mxCreateNumericArray(3,size_img, mxSINGLE_CLASS, mxREAL);
+    plhs[0] = mxCreateNumericArray(numDims, size_img, mxSINGLE_CLASS, mxREAL);
     float *imgout =(float*) mxGetPr(plhs[0]);
     // call C function with the CUDA denoising
   
-    const long imageSize[3]={size_img[0] ,size_img[1],size_img[2] };
+    const long imageSize[3]={size_img[0], size_img[1], third_dim };
+    
     aw_pocs_tv(img,imgout, alpha, imageSize, maxIter,delta); 
     
     //prepareotputs

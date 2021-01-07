@@ -54,8 +54,11 @@ Python/tigre/Source/_tvdenoising.cpp
 *.hex
 
 # Debug files
+
 *.dSYM/
-MATLAB/Private/
-MATLAB/Torelease/mexReadXim/mexReadXim.mexw64
-MATLAB/Utilities/VarianCBCT/script_debug.m
-MATLAB/Utilities/VarianCBCT/FDK_half.workflow.pptx
+*.mexa64
+
+MATLAB/mex_CUDA_win64.xml
+
+
+*.mexw64

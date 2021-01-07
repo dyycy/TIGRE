@@ -45,8 +45,8 @@ class ASD_POCS(IterativeReconAlg):
         Sets the value of the hyperparameter for SART iteration.
 
     :keyword lmbda_red: (np.float64)
-        Reduction of lambda every iteration
-        lambda=lambdared*lambda. Default is 0.99
+        Reduction of lmbda every iteration
+        lmbda=lmbda_red*lmbda. Default is 0.99
 
     :keyword init: (str)
         Describes different initialization techniques.
@@ -162,8 +162,7 @@ class ASD_POCS(IterativeReconAlg):
                 dtvg = dtvg * self.alpha_red
 
             self.beta *= self.beta_red
-            c = np.dot(dg_vec.reshape(-1,), dp_vec.reshape(-1,)) / \
-                max(dg * dp, 1e-6)
+            c = np.dot(dg_vec.reshape(-1,), dp_vec.reshape(-1,)) / max(dg * dp, 1e-6) # reshape ensures no copy is made. 
             if (c < -0.99 and dd <=
                     self.epsilon) or self.beta < 0.005 or n_iter > self.niter:
                 if self.verbose:

@@ -19,20 +19,20 @@ function [ projections ] = Ax(img, geo, angles, varargin )
 % Lets make 100% sure that data is correct
 %% OPtionals
 
-ptype='ray-voxel';
+ptype='Siddon';
 if nargin > 3
-   assert(any(strcmpi(varargin{1},{'ray-voxel','interpolated'})),'TIGRE:Ax:InvalidInput','Projection type not understood (4th input).');
+   assert(any(strcmpi(varargin{1},{'Siddon','ray-voxel','interpolated'})),'TIGRE:Ax:InvalidInput','Projection type not understood (4th input).');
    ptype=varargin{1};
 end
 
 
 %% image
-assert(isa(img,'single'),'TIGRE:Ax:InvalidInput','Image shoudl be single type');
-assert(isreal(img),'TIGRE:Ax:InvalidInput','Image shoudl be real (non-complex)');
-% assert(size(img,3)>1,'TIGRE:Ax:InvalidInput', 'image shoudl be 3D'); %TODO: needed? 
+assert(isa(img,'single'),'TIGRE:Ax:InvalidInput','Image should be single type');
+assert(isreal(img),'TIGRE:Ax:InvalidInput','Image should be real (non-complex)');
+% assert(size(img,3)>1,'TIGRE:Ax:InvalidInput', 'image should be 3D'); %TODO: needed? 
 %% Angles
-assert(isreal(angles),'TIGRE:Ax:InvalidInput','Angles shoudl be real (non-complex)');
-assert(size(angles,1)==1 | size(angles,1)==3 ,'TIGRE:Ax:InvalidInput','Angles shoudl be of size 1xN or 3xN');
+assert(isreal(angles),'TIGRE:Ax:InvalidInput','Angles should be real (non-complex)');
+assert(size(angles,1)==1 | size(angles,1)==3 ,'TIGRE:Ax:InvalidInput','Angles should be of size 1xN or 3xN');
 angles=double(angles); %in case they were single.
 if size(angles,1)==1
    angles=repmat(angles,[3 1]);
@@ -41,13 +41,13 @@ if size(angles,1)==1
 end
 %% geometry
 geo=checkGeo(geo,angles);
-assert(isequal(size(img),geo.nVoxel.'),'TIGRE:Ax:BadGeometry','nVoxel does not match with provided image size');
+assert(isequal([size(img,1) size(img,2) size(img,3)],squeeze(geo.nVoxel.')),'TIGRE:Ax:BadGeometry','nVoxel does not match with provided image size');
 
 %% Temporary (?)
 
 s= sum(abs(angles),2);
-if (s(2)~=0 || s(3)~=0) && strcmp(ptype,'ray-voxel') && strcmp(geo.mode,'parallel')
-    warning(['''ray-voxel'' Not supported for parallel beam arbitrary axis rotation, changed to ''interpolated''.',char(10),'Ignore this message if you are not purposedly triying enforce its use.']);
+if (s(2)~=0 || s(3)~=0) && (strcmp(ptype,'Siddon')||strcmp(ptype,'ray-voxel')) && strcmp(geo.mode,'parallel')
+    warning(['''Siddon'' Not supported for parallel beam arbitrary axis rotation, changed to ''interpolated''.',char(10),'Ignore this message if you are not purposedly triying enforce its use.']);
     ptype='interpolated';
 end
 

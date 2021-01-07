@@ -6,7 +6,7 @@ function [res,errorL2,qualMeasOut]=SART(proj,geo,angles,niter,varargin)
 %   using the projection data PROJ taken over ALPHA angles, corresponding
 %   to the geometry descrived in GEO, using NITER iterations.
 %
-%   SART_CBCT(PROJ,GEO,ALPHA,NITER,OPT,VAL,...) uses options and values for solving. The
+%   SART(PROJ,GEO,ALPHA,NITER,OPT,VAL,...) uses options and values for solving. The
 %   possible options in OPT are:
 %
 %
@@ -83,13 +83,13 @@ geoaux.sVoxel([1 2])=geo.sDetector([1])*1.1; % a Bit bigger, to avoid numerical 
 geoaux.sVoxel(3)=max(geo.sDetector(2),geo.sVoxel(3)); % make sure lines are not cropped. One is for when image is bigger than detector and viceversa
 geoaux.nVoxel=[2,2,2]'; % accurate enough?
 geoaux.dVoxel=geoaux.sVoxel./geoaux.nVoxel;
-W=Ax(ones(geoaux.nVoxel','single'),geoaux,angles,'ray-voxel');  %
+W=Ax(ones(geoaux.nVoxel','single'),geoaux,angles,'Siddon');  %
 W(W<min(geo.dVoxel)/4)=Inf;
 W=1./W;
 W(W>0.1)=0.1;
 
 % Back-Projection weigth, V
-V=computeV(geo,angles,alphablocks);
+V=computeV(geo,angles,alphablocks,orig_index);
 
 clear A x y dx dz;
 %% hyperparameter stuff
@@ -307,7 +307,7 @@ for ii=1:length(opts)
                 continue;
             end
             if strcmp(val,'FDK')
-                res=FDK_CBCT(proj,geo,alpha);
+                res=FDK(proj,geo,alpha);
                 continue;
             end
             if strcmp(val,'multigrid')

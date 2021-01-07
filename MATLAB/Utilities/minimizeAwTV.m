@@ -31,6 +31,7 @@ else
         error('Wrong amount of inputs');
     end
 end
+
 img=AwminTV(img,dtvg,ng,delta);
-%  img=(permute(img,[3 2 1]));
+
 end

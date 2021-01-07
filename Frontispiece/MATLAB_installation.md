@@ -52,13 +52,15 @@ A succesfull installation should be able to execute the script at `TIGRE/MATLAB/
 
    Any version avobe 9.2 has been tested, however its recommended to get the latests version as possible, for performance and support.\
    [CUDA download link](https://developer.nvidia.com/cuda-downloads)\
-   [Detailed installation guide](https://developer.download.nvidia.com/compute/cuda/10.0/Prod/docs/sidebar/CUDA_Installation_Guide_Windows.pdf)
+   [Detailed installation guide](https://developer.download.nvidia.com/compute/cuda/10.0/Prod/docs/sidebar/CUDA_Installation_Guide_Windows.pdf)\
+   **NOTE**: In windows at least, the User has to have no spaces. 
    
 3. Install Visiual Studio
 
    **Make sure you install C++**.\
    [Download link for the latest version](https://visualstudio.microsoft.com/downloads/)\
-   [Download link for older versions](https://visualstudio.microsoft.com/vs/older-downloads/)
+   [Download link for older versions](https://visualstudio.microsoft.com/vs/older-downloads/)\
+   **NOTE**: In windows at least, the User has to have no spaces. 
    
 4. Download TIGRE
 
@@ -67,7 +69,7 @@ A succesfull installation should be able to execute the script at `TIGRE/MATLAB/
 
 5. Test the correct configuration of Visual Studio 
 
-   Open MATLAB and run `mex -setup -v`. Among other things, the output shoudl contain:
+   Open MATLAB and run `mex -setup -v`. Among other things, the output should contain:
    ```
    ... Looking for compiler 'Microsoft Visual C++ 2015 (C)' ...
    ... Looking for registry setting 'HKLM\SOFTWARE\Microsoft\VisualStudio\SxS\VC7' 14.0 ...No.
@@ -150,7 +152,7 @@ A succesfull installation should be able to execute the script at `TIGRE/MATLAB/
 
 3. Install gcc 
 
-   gcc shoudl already be installed in your linux, as it is part of the linux distribution.\
+   gcc should already be installed in your linux, as it is part of the linux distribution.\
    If you need to install an older version of gcc, [read here](https://askubuntu.com/questions/923337/installing-an-older-gcc-version3-4-3-on-ubuntu-14-04-currently-4-8-installed).
    
 4. Download TIGRE
