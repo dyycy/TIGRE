@@ -49,10 +49,9 @@
 % same unless you change the projections. 
 
 directory='~/your_data_path/varian/2020-01-01_123456/';
-datafolder='D:\MATLAB\2020-09-03_143653_FINISHED_Head'
 
-[proj,geo, angles ] = VarianDataLoader(datafolder);
-[proj,geo, angles ] = VarianDataLoader(datafolder, false); %remove motion lag correction.
+[proj,geo, angles ] = VarianDataLoader(directory);
+[proj,geo, angles ] = VarianDataLoader(directory, false); %remove motion lag correction.
 
 % You can directly call reconstruction code now:
 
@@ -64,17 +63,17 @@ img=FDK(proj,geo,angles);
 % Similarly, a Nikon dataset can be loaded with the following code:
 
 directory='~/your_data_path/Nikon/Sample_name/';
-[proj,geo, angles ] = NikonDataLoader(datafolder);
+[proj,geo, angles ] = NikonDataLoader(directory);
 
 % as micro-CT datasets are large, optional arguments for loading partial
 % amount of data is available:
 
 % load equidistant angles, but only few:
-[proj,geo, angles ] = NikonDataLoader(datafolder,'sampling','equidistant','num_angles',150);
+[proj,geo, angles ] = NikonDataLoader(directory,'sampling','equidistant','num_angles',150);
 % load every X angles (10)
-[proj,geo, angles ] = NikonDataLoader(datafolder,'sampling','step','sampling_step',10);
+[proj,geo, angles ] = NikonDataLoader(directory,'sampling','step','sampling_step',10);
 % load first X angles (1000)
-[proj,geo, angles ] = NikonDataLoader(datafolder,'sampling','continuous','num_angles',1000);
+[proj,geo, angles ] = NikonDataLoader(directory,'sampling','continuous','num_angles',1000);
 
 % You can directly call reconstruction code now:
 
@@ -86,7 +85,7 @@ img=FDK(proj,geo,angles);
 % As with the other loaders, this can be simply done with:
 
 directory='~/your_data_path/Dicom/Some_folder/';
-[proj,geo, angles,dicomhdr] = dicomDataLoader(datafolder);
+[proj,geo, angles,dicomhdr] = dicomDataLoader(directory);
 
 %This also returns the headers for DICOM files, so you can inspect them
 %yourself. Its been almost untested aside from few datasets, please do
