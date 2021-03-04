@@ -6,17 +6,17 @@ function [proj,geo, angles ] = VarianDataLoader(datafolder, varargin)
 % Tested on TrueBeam 2.5 and 2.7
 % Date: 2020-04-16
 % Author: Yi Du (yi.du@hotmail.com)
-% datafolder = 'D:\Edge\CBCT_Export\2020-01-09_144244';
+% datafolder = '~/your_data_path/varian/2020-01-01_123456/';
 
 %% Load geometry
 [geo, ScanXML] = GeometryFromXML(datafolder);
 
-%% Motion lag correcion
+%% Remove the starting and ending phase projections
 thd = 0;
 if(~isempty(varargin)&&(varargin{1}))
-    thd = str2double(ScanXML.Acquisitions.Velocity.Text)...
+    angular_interval = str2double(ScanXML.Acquisitions.Velocity.Text)...
         ./str2double(ScanXML.Acquisitions.FrameRate.Text);
-    thd = thd *0.95;
+    thd = angular_interval *0.95;
 end
 
 %% Load proj and angle

@@ -49,6 +49,8 @@
 % same unless you change the projections. 
 
 directory='~/your_data_path/varian/2020-01-01_123456/';
+datafolder='D:\MATLAB\2020-09-03_143653_FINISHED_Head'
+
 [proj,geo, angles ] = VarianDataLoader(datafolder);
 [proj,geo, angles ] = VarianDataLoader(datafolder, false); %remove motion lag correction.
 
