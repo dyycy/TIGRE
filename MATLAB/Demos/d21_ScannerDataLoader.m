@@ -49,14 +49,16 @@
 % same unless you change the projections. 
 
 directory='~/your_data_path/varian/2020-01-01_123456/';
-
 [proj,geo, angles ] = VarianDataLoader(directory);
-[proj,geo, angles ] = VarianDataLoader(directory, false); %remove motion lag correction.
+
+% [proj,geo, angles ] = VarianDataLoader(directory, false); %remove motion lag correction.
 
 % You can directly call reconstruction code now:
 
 img=OS_SART(proj,geo,angles,100);
 img=FDK(proj,geo,angles);
+
+[newproj,newgeo, newangles ] = newVarianDataLoader(directory, false);
 
 %% Nikon micro-CT
 

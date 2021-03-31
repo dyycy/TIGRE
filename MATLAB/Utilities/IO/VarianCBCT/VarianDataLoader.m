@@ -3,7 +3,7 @@ function [proj,geo, angles ] = VarianDataLoader(datafolder, varargin)
 %   Optional parameter: Motion lag correction. Default True. 
 %
 % Load all dataset that are needed for reconstruction
-% Tested on TrueBeam 2.5 and 2.7
+% Tested on TrueBeam 2.0 and 2.7
 % Date: 2020-04-16
 % Author: Yi Du (yi.du@hotmail.com)
 % datafolder = '~/your_data_path/varian/2020-01-01_123456/';
@@ -11,7 +11,7 @@ function [proj,geo, angles ] = VarianDataLoader(datafolder, varargin)
 %% Load geometry
 [geo, ScanXML] = GeometryFromXML(datafolder);
 
-%% Remove the starting and ending phase projections
+%% Remove the duplicate projections due to acceleration and decceleration
 thd = 0;
 if(~isempty(varargin)&&(varargin{1}))
     angular_interval = str2double(ScanXML.Acquisitions.Velocity.Text)...
