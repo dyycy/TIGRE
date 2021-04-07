@@ -4,7 +4,7 @@ function [proj,geo, angles ] = VarianDataLoader(datafolder, varargin)
 %
 % Load all dataset that are needed for reconstruction
 % Tested on TrueBeam 2.0 and 2.7
-% Date: 2020-04-16
+% Date: 2021-04-02
 % Author: Yi Du (yi.du@hotmail.com)
 % datafolder = '~/your_data_path/varian/2020-01-01_123456/';
 
@@ -19,11 +19,18 @@ if(~isempty(varargin)&&(varargin{1}))
     thd = angular_interval *0.95;
 end
 
-%% Load proj and angle
-[proj, angles, blk] = BatchReadXim(datafolder, thd);
+%% Load proj and angles
+[proj, angles, airnorm] = ProjLoader(datafolder,thd);
+% Detector point scatter correction
+proj = DetectorPointScatterCorrection(proj, geo);
 
-%% Logarithmic calculation
-proj = log(repmat(blk, [1 1 size(proj,3)])./proj);
+%% Load blank scan
+[Blk, Sec, BlkAirNorm] = BlkLoader(datafolder);
+% Detector point scatter correction
+Blk = DetectorPointScatterCorrection(Blk, geo);
+
+%% Airnorm and Logarithmic Normalization
+proj = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm);
 
 %% Mediate filtering along colume-orth
 for ii = 1:size(proj,3)

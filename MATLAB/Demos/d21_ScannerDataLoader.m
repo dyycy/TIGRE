@@ -38,7 +38,7 @@
 %--------------------------------------------------------------------------
 %%
 
-%% Varan onboard CBCT.
+%% Varian TrueBeam onboard CBCT.
 
 % If you have a Varian scanner that saves data in XIM format, the following
 % code will be able to load your dataset. 
