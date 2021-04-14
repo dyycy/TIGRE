@@ -10,7 +10,7 @@ function [Blk, Sec, BlkAirNorm] = BlkLoader(datafolder)
 [~, ScanXML] = GeometryFromXML(datafolder);
 
 %% True for CC, and False for CW
-if(str2double(ScanXML.Acquisitions.StopAngle.Text) >str2double(ScanXML.Acquisitions.StartAngle.Text))
+if(str2double(ScanXML.Acquisitions.StopAngle.Text) - str2double(ScanXML.Acquisitions.StartAngle.Text)>0)
     RtnDirection = 'CC';
 else
     RtnDirection = 'CW';
@@ -59,6 +59,7 @@ if(Version == 2.7)
         Blk(:,:,ii) = double(tmp');
         tmp = ReadXim(filename, 0);
         BlkAirNorm(ii) = double(tmp.properties.KVNormChamber);
+        % GantryRtn
         Sec(ii) = double(tmp.properties.GantryRtn);
     end
 end

@@ -10,17 +10,27 @@ function proj = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm)
 if(isempty(Sec))
     for ii = 1:length(angles)
         CF = airnorm(ii)/BlkAirNorm;
-        proj(:,:,ii) = log(CF*Blk./proj(:,:,ii));
+        proj(:,:,ii) = log(CF*Blk./(proj(:,:,ii) + eps) + eps);
     end
 % Version = 2.7    
 else
+    % GantryRtn = KvSourceRtn - 90;
+    angles = angles - 90;
+
+    % Flip for interpolation
+    if(Sec(2) - Sec(1) <0)
+        Sec = flip(Sec);
+        BlkAirNorm = flip(BlkAirNorm);
+        Blk = flip(Blk, 3);
+    end    
+    
     % interpolation weights
     for ii = 1:length(angles)
         [left, weights] = interp_weight(angles(ii), Sec);
         interp_blk = weights(1) * Blk(:,:,left) + weights(2) * Blk(:,:,left+1);
         % Correction factor
         CF = airnorm(ii)/(0.5*BlkAirNorm(left) + 0.5*BlkAirNorm(left+1));
-        proj(:,:,ii) = log(CF*interp_blk./proj(:,:,ii));
+        proj(:,:,ii) = log(CF*interp_blk./(proj(:,:,ii)+eps) + eps);
     end
 end
 

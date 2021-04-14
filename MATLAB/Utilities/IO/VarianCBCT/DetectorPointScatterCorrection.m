@@ -47,4 +47,7 @@ for ii = 1:size(proj,3)
     proj(:,:,ii) = proj(:,:,ii) - scpage;
 end
 
+%% Over correction
+proj(proj<0)=eps;
+
 end
