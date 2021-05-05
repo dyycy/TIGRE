@@ -15,7 +15,7 @@ a3 = 0.311272841141691;
 a4 = 0.002472148007134;
 a5 = -12.6606856375944;
 
-% unit: 
+% unit: mm
 offset=geo.offDetector;
 
 % grid unit: mm
@@ -42,12 +42,16 @@ hd = a0*(a1* exp(-a2 * grid)) + a3 * (exp( -a4 * ( grid - a5).^3 ));
 %% 2D Convolution with downsampling and upsampling
 for ii = 1:size(proj,3)
     page = interp2(uu, vv, proj(:,:,ii), duu, dvv);
+    % gross scatter distribution
     sc = conv2(page, hd, 'same');
+    % upsample the scatter distribution to the same grid level as the
+    % measured intensity
     scpage = interp2(duu, dvv, sc, uu, vv,'spline');
+    % primary = measure - scatter
     proj(:,:,ii) = proj(:,:,ii) - scpage;
 end
 
 %% Over correction
-proj(proj<0)=eps;
+proj(proj<0) = eps;
 
 end
