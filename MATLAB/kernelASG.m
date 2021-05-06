@@ -1,6 +1,13 @@
 function kernel = kernelASG(geo, dus, dvs)
 %% Anti-sctter grid response function
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
+% Input:    
+%           geo: geometry structure
+%           dus: downsampled u vector
+%           dvs: downsampled v vector
+% Output:
+%           kernel: anti-scatter grid
+%
 % Date: 2021-05-04
 % Author: Yi Du (yi.du@hotmail.com)
 

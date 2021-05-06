@@ -1,8 +1,6 @@
-function [outputArg1,outputArg2] = ScatterKernel(geo,inputArg2)
+function [outputArg1,outputArg2] = ScatterKernel(datafolder, geo,ScanXML)
 %SCATTERKERNEL Summary of this function goes here
 %   Detailed explanation goes here
-outputArg1 = geo;
-
 
 % unit: mm
 offset=geo.offDetector;
@@ -20,10 +18,18 @@ dus = downsample(us, 26);
 % Downsampled to about 4 mm in axial direction
 dvs = downsample(vs, 10);
 
-%% Grid mesh
+step_du = mean(diff(dus));
+step_dv = mean(diff(dvs));
+
+%% Grid
 % unit: mm
-[uu,vv] = meshgrid(us,vs); %detector
-[duu, dvv] = meshgrid(dus,dvs); %detector
+[ugd,vgd] = meshgrid(us,vs); %detector
+[dugd, dvgd] = meshgrid(dus,dvs); %detector
+
+%% Load Scatter Calibration
+sccalib = ScCalibFromXML(datafolder);
+
+
 
 
 end
