@@ -1,4 +1,4 @@
-function kernel = kernel_ASG(geo, dus, dvs)
+function kernel = kernelASG(geo, dus, dvs)
 %% Anti-sctter grid response function
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Date: 2021-05-04
