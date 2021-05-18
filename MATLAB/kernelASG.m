@@ -1,4 +1,4 @@
-function kernel = kernelASG(geo, dus, dvs)
+function kernel = kernelASG(sccalib, geo, dus, dvs)
 %% Anti-sctter grid response function
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:    
@@ -45,6 +45,7 @@ t_ratio = k.*gamma + b;
 
 %% Kernel: [nv, nu]
 kernel = repmat(t_ratio, [1,length(dus)]);
-kernel(kernel<0.25) = 0.25;
+efficiency = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.GridEfficiency.LamellaTransmission.Text);
+kernel(kernel < efficiency) = efficiency;
 
 end

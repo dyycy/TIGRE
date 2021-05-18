@@ -1,4 +1,4 @@
-function [outputArg1,outputArg2] = ScatterKernel(datafolder, geo,ScanXML)
+function [outputArg1,outputArg2] = ScatterKernel(datafolder, geo, ScanXML)
 %SCATTERKERNEL Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -29,11 +29,29 @@ step_dv = mean(diff(dvs));
 %% Load Scatter Calibration
 sccalib = ScCalibFromXML(datafolder);
 
+%% Load Blk (comment out later)
+%{
+[Blk, Sec, BlkAirNorm] = BlkLoader(datafolder);
+% Detector point scatter correction
+Blk = DetectorPointScatterCorrection(Blk, geo);
+%}
+sBlk = sum(Blk, 3);
+sAirNorm = sum(BlkAirNorm);
+
+%% n-thickness group number and boundaries
+ngroup = length(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel);
+nbounds = [];
+
+for ii=1:ngroup
+    % unit: mm
+    tmp = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{ii}.Thickness.Text);
+    nbounds = [nbounds, tmp];
+end
+
 
 
 
 end
-
 
 
 function ce = kernel_ce(Prm, Blk, du, dv, A, alpha, beta)

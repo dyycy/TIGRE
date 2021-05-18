@@ -1,9 +1,11 @@
-function thickness = EstimateThickness(Proj, Prm, sccalib)
+function thickness = EstimateThickness(Blk, BlkAirNorm, Prm, AirNorm, sccalib, step_du, step_dv)
 %% Estimate Water-Equivalent Thickness 
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:
-%               Proj: Total intensity, i.e., I_0
+%               Blk: Total intensity, i.e., I_0
+%               BlkAirNorm: 
 %               Prm: Primary intensity, i.e., I_p
+%               AirNorm: Primary intensity airnorm chamber value
 %               sccalib: Scatter Calibration Structure
 % Output:
 %               thickness: Estimated object thickness, i.e., tau(x,y) in Reference
@@ -11,12 +13,17 @@ function thickness = EstimateThickness(Proj, Prm, sccalib)
 % Author: Yi Du (yi.du@hotmail.com)
 
 % mu H2O = 0.02 /mm
-muH2O = sccalib.CalibrationResults.Globals.muH2O;
+muH2O = str2double(sccalib.CalibrationResults.Globals.muH2O.Text);
+
+% Air Chamber Normalization Factor
+NF = AirNorm/BlkAirNorm; 
+
 % unit mm
-thickness = log(Proj./Prm) /muH2O;
+thickness = log(NF*Blk./Prm) /muH2O;
 
-%% Remember to smooth the estimated thickness
-
+%% Smooth the estimated thickness
+% thickness(vv, uu, ntheta)
+thickness = SmoothThickness(thickness, sccalib, step_du, step_dv);
 
 end
 
