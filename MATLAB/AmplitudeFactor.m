@@ -1,6 +1,5 @@
-function [outputArg1,outputArg2] = AmplitudeFactor(I0, Ip, sccalib)
-%AMPLITUDEFACTOR Summary of this function goes here
-%   Detailed explanation goes here
+function cfactor = AmplitudeFactor(Prj, Prm, sccalib)
+%% AMPLITUDEFACTOR Summary of this function goes here
 
 %% group number
 ngroup = length(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel);
@@ -16,7 +15,7 @@ for ii=1:ngroup
     % unitless
     alpha = str2double(tmp.alpha.Text);
     beta = str2double(tmp.beta.Text);
-    cfactor(:,:,ii) = A.* (Ip./(I0+eps)).^(alpha) .* ( log(I0./(Ip+eps)) ).^(beta);    
+    cfactor(:,:,ii) = A.* (Prm./(Prj+eps)).^(alpha) .* ( log(Prj./(Prm+eps)) ).^(beta);    
 end
 
 end

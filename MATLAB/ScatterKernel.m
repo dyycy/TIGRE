@@ -1,4 +1,4 @@
-function [outputArg1,outputArg2] = ScatterKernel(datafolder, geo, ScanXML)
+function [outputArg1,outputArg2] = ScatterCorrection(datafolder, Blk, BlkAirNorm, geo, ScanXML)
 %SCATTERKERNEL Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -48,12 +48,18 @@ for ii=1:ngroup
     nbounds = [nbounds, tmp];
 end
 
+%% Scatter Correction
+for ii = 1:ScanXML
+
+
+
 
 
 
 end
 
 
+%%
 function ce = kernel_ce(Prm, Blk, du, dv, A, alpha, beta)
 
 edgewt = imbinarize(Prm,T);

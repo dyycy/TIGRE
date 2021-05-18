@@ -1,4 +1,4 @@
-function kernel = kernelASG(sccalib, geo, dus, dvs)
+function kernel = ASGkernel(sccalib, geo, dus, dvs)
 %% Anti-sctter grid response function
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:    

@@ -1,14 +1,14 @@
-function thickness = EstimateThickness(Blk, BlkAirNorm, Prm, AirNorm, sccalib, step_du, step_dv)
-%% Estimate Water-Equivalent Thickness 
+function thickness = ThicknessEstimator(Blk, BlkAirNorm, Prm, AirNorm, sccalib, step_du, step_dv)
+%% Estimate Water-Equivalent Thickness (2D)
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:
-%               Blk: Total intensity, i.e., I_0
+%               Blk(u,v): Total intensity, i.e., I_0
 %               BlkAirNorm: 
-%               Prm: Primary intensity, i.e., I_p
+%               Prm(u,v): Primary intensity, i.e., I_p
 %               AirNorm: Primary intensity airnorm chamber value
 %               sccalib: Scatter Calibration Structure
 % Output:
-%               thickness: Estimated object thickness, i.e., tau(x,y) in Reference
+%               thickness(u,v): Estimated object thickness, i.e., tau(x,y) in Reference
 % Date: 2021-05-05
 % Author: Yi Du (yi.du@hotmail.com)
 

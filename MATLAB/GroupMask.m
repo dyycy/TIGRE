@@ -1,12 +1,12 @@
 function nmask = GroupMask(thickness, ngroup, nbounds)
-%Generate n-group masks
+%% Generate n-group masks for estimated thickness (2D)
 %
 % SYNOPSIS: nmask = GroupMask(thickness, nbounds)
 %
 % INPUT nbounds: thickness based n-group bounds
 %		thickness: estimated thickness 2D matrix
 %
-% OUTPUT nmask
+% OUTPUT nmask(u, v, ngroup)
 %
 % REMARKS
 %
@@ -20,10 +20,11 @@ function nmask = GroupMask(thickness, ngroup, nbounds)
 %% thickness based n-group
 nmask = zeros(size(thickness, 1), size(thickness, 2), ngroup);
 
-%% 
+%% n-group mask
 for ii = 1:ngroup-1
     nmask(:, :, ii) = (thickness>nbounds(ii)).*(thickness<nbounds(ii+1));
 end
+
 nmask(:,:,ngroup) = thickness>nbounds(ngroup);
 
 end
