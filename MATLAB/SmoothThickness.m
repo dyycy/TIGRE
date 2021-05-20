@@ -16,12 +16,12 @@ sigma_v = str2double(sccalib.CalibrationResults.Globals.AsymPertSigmaMMv.Text);
 % only one page
 if(size(thickness, 3) == 1)
     %% -------------- to check later the coordinate orientation
-    thickness = imgaussfilt(thickness, [sigma_u/step_du sigma_v/step_dv]);
+    thickness = imgaussfilt(thickness, [sigma_v/step_dv sigma_u/step_du]);
 % 3D thickness matrix
 elseif(size(thickness, 3) >1)
     for ii = 1: size(thickness, 3)
         %% -------------- to check later the coordinate orientation
-        thickness(:,:,ii) = imgaussfilt(thickness(:,:,ii), [sigma_u/step_du sigma_v/step_dv]);
+        thickness(:,:,ii) = imgaussfilt(thickness(:,:,ii), [sigma_v/step_dv sigma_u/step_du]);
     end
 end
 

@@ -46,12 +46,12 @@ for ii = 1:size(proj,3)
     sc = conv2(page, hd, 'same');
     % upsample the scatter distribution to the same grid level as the
     % measured intensity
-    scpage = interp2(duu, dvv, sc, uu, vv,'spline');
+    scpage = interp2(duu, dvv, sc, uu, vv, 'spline', 0);
     % primary = measure - scatter
     proj(:,:,ii) = proj(:,:,ii) - scpage;
 end
 
-%% Over correction
+%% Cutoff for over-correction
 proj(proj<0) = eps;
 
 end

@@ -1,4 +1,4 @@
-function cfactor = AmplitudeFactor(Prj, Prm, sccalib)
+function cfactor = AmplitudeFactor(blk, page, sccalib)
 %% AMPLITUDEFACTOR Summary of this function goes here
 
 %% group number
@@ -15,7 +15,14 @@ for ii=1:ngroup
     % unitless
     alpha = str2double(tmp.alpha.Text);
     beta = str2double(tmp.beta.Text);
-    cfactor(:,:,ii) = A.* (Prm./(Prj+eps)).^(alpha) .* ( log(Prj./(Prm+eps)) ).^(beta);    
+
+    % fill holes
+    term = (page + eps)./(blk + eps);
+    logterm = -log(term);
+    logterm(logterm<0) = NaN;
+    logterm = inpaint_nans(logterm, 2);
+    
+    cfactor(:,:,ii) = A.* (term).^(alpha) .* ( logterm ).^(beta);    
 end
 
 end

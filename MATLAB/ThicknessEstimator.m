@@ -1,4 +1,4 @@
-function thickness = ThicknessEstimator(Blk, BlkAirNorm, Prm, AirNorm, sccalib, step_du, step_dv)
+function thickness = ThicknessEstimator(blk, page, sccalib, step_du, step_dv)
 %% Estimate Water-Equivalent Thickness (2D)
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:
@@ -15,11 +15,15 @@ function thickness = ThicknessEstimator(Blk, BlkAirNorm, Prm, AirNorm, sccalib, 
 % mu H2O = 0.02 /mm
 muH2O = str2double(sccalib.CalibrationResults.Globals.muH2O.Text);
 
-% Air Chamber Normalization Factor
-NF = AirNorm/BlkAirNorm; 
-
 % unit mm
-thickness = log(NF*Blk./Prm) /muH2O;
+tmp = blk./page;
+tmp(tmp<0)=0.0001;
+thickness = log(tmp) /muH2O;
+
+% fill holes by interpolation
+thickness(thickness<0) = NaN;
+
+thickness = inpaint_nans(thickness, 2);
 
 %% Smooth the estimated thickness
 % thickness(vv, uu, ntheta)
