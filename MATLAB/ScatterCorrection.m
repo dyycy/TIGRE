@@ -59,20 +59,26 @@ ASG = ASGkernel(sccalib, geo, dus, dvs);
 
 gamma = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.ObjectScatterFit.gamma.Text);
 
+gamma = gamma/10;
+
 prim = zeros(size(proj));
 
-for ii = 1:size(proj, 3)
+lambda = 0.01;
+
+for ii = 1:1 %size(proj, 3)
     % blk: I_0 unattenuated blk signal
     CF = sAirNorm/airnorm(ii);
-    blk = interp2(ugd, vgd, sBlk/CF, dugd, dvgd);    
+    blk = interp2(ugd, vgd, sBlk/CF, dugd, dvgd, 'linear', 0);   
     % page: I_p primary signal
     % note: detector point spread deconvolution should be done first
-    page = interp2(ugd, vgd, proj(:,:,ii), dugd, dvgd);
+    page = interp2(ugd, vgd, proj(:,:,ii), dugd, dvgd, 'linear', 0);
     % Is initialization
     Is = zeros(size(page));    
     
     %% Iterative Correction
     for jj = 1: niter
+        % Is previous scatter map
+        Is_prv = Is;
         % estimate thickness
         thickness = ThicknessEstimator(blk, page, sccalib, step_du, step_dv);
         % smooth thickness
@@ -105,14 +111,16 @@ for ii = 1:size(proj, 3)
         tmp2 = real(ifft2(tmp2));
         %% estimated scatter map
         Is = (1 - gamma.*thickness).*tmp1 + gamma.*tmp2;
-        % updated primary map
-        page = blk - Is;
+        % Ip = Ip + lambda * (Is_prv - Is)
+        page = page + lambda * (Is_prv - Is);
+        page(page<0)=eps;
     end
     
     %% Upsampling and cutoff for over-correction
     % measured intensity
-    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'spline', 0);
+    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'linear', 0);
     [s,l] = bounds(SF(:))
+    SF(SF<0) = eps;
     SF = min(SF./proj(:,:,ii), 0.95);
     % primary
     prim(:,:,ii) = proj(:,:,ii).*(1 - SF);
