@@ -53,7 +53,9 @@ end
 niter = 10;
 
 % k(y): anti-scatter grid
-ASG = ASGkernel(sccalib, geo, dus, dvs);
+% ASG = ASGkernel(sccalib, geo, dus, dvs);
+ASG = ASGkernel(sccalib, geo, us, vs);
+
 %% --------------------- gamma in scatter estimation
 %% To debug
 
@@ -68,10 +70,19 @@ lambda = 0.01;
 for ii = 1:1 %size(proj, 3)
     % blk: I_0 unattenuated blk signal
     CF = sAirNorm/airnorm(ii);
-    blk = interp2(ugd, vgd, sBlk/CF, dugd, dvgd, 'linear', 0);   
+    
+    %{    
+    blk = interp2(ugd, vgd, sBlk/CF, dugd, dvgd, 'linear', 0);       
     % page: I_p primary signal
     % note: detector point spread deconvolution should be done first
     page = interp2(ugd, vgd, proj(:,:,ii), dugd, dvgd, 'linear', 0);
+    %}
+    
+    blk = sBlk/CF;
+    page = proj(:,:,ii);
+    step_du = mean(diff(us));
+    step_dv = mean(diff(vs));    
+    
     % Is initialization
     Is = zeros(size(page));    
     
@@ -86,7 +97,9 @@ for ii = 1:1 %size(proj, 3)
         % Ri(x,y): group-based masks
         nmask = GroupMask(thickness, ngroup, nbounds);
         % gi(x,y): group-based form function
-        gform = FormFunc(sccalib, dugd, dvgd);
+%        gform = FormFunc(sccalib, dugd, dvgd);
+        gform = FormFunc(sccalib, ugd, vgd);
+        
         % cei(x,y): group-based amplitude factors
         cfactor = AmplitudeFactor(blk, page, sccalib);
 
@@ -118,7 +131,8 @@ for ii = 1:1 %size(proj, 3)
     
     %% Upsampling and cutoff for over-correction
     % measured intensity
-    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'linear', 0);
+%    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'linear', 0);
+    SF = Is;
     [s,l] = bounds(SF(:))
     SF(SF<0) = eps;
     SF = min(SF./proj(:,:,ii), 0.95);
