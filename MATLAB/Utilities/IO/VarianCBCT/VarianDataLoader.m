@@ -11,7 +11,7 @@ function [proj,geo, angles] = VarianDataLoader(datafolder, varargin)
 %% Load geometry
 [geo, ScanXML] = GeometryFromXML(datafolder);
 
-%% Remove the duplicate projections due to acceleration and decceleration
+%% Remove the over-sampled projections due to acceleration and decceleration
 thd = 0;
 if(~isempty(varargin)&&(varargin{1}))
     angular_interval = str2double(ScanXML.Acquisitions.Velocity.Text)...
@@ -29,8 +29,15 @@ proj = DetectorPointScatterCorrection(proj, geo);
 % Detector point scatter correction
 Blk = DetectorPointScatterCorrection(Blk, geo);
 
+%% Scatter Correction
+proj = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
+
 %% Airnorm and Logarithmic Normalization
 proj = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm);
+
+%% Beam Hardening Correction via MIRT toolkit
+
+
 
 %% Mediate filtering along colume-orth
 for ii = 1:size(proj,3)
@@ -58,5 +65,10 @@ if(angles(end) - angles(1)>0)
 else
     angles = flip(angles);
 end
+
+
+%%
+
+% img=FDK(proj,geo,angles);
 
 end

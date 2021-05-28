@@ -1,40 +1,41 @@
 function prim = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo)
-%SCATTERKERNEL Summary of this function goes here
-%   Detailed explanation goes here
+% Scatter Correction Module
+% Reference: Improved scatter correction using adaptive scatter kernel superposition
+% No downsampling or upsampling is involved in current version
+% Author: Yi Du (yi.du@hotmail.com)
+% Date: 2021-05-24
 
-% unit: mm
+%% Center Coordinates
+%unit: mm
 offset=geo.offDetector;
-% Center Kernel
 offset = [0, 0];
 
 % grid unit: mm
 us = ((-geo.nDetector(1)/2+0.5):1:(geo.nDetector(1)/2-0.5))*geo.dDetector(1) + offset(1);
 vs = ((-geo.nDetector(2)/2+0.5):1:(geo.nDetector(2)/2-0.5))*geo.dDetector(2) + offset(2);
 
-%% Downsampling
+%% Downsampling (not used in current version)
+% downsampling rate
+ds_rate = 8;
 % unit: mm
-% Downsampled to about 10 mm in axial direction
-dus = downsample(us, 26);
-% Downsampled to about 4 mm in transaxial direction
-dvs = downsample(vs, 10);
+% Downsampled to about 10 mm in axial direction in Ref
+dus = decimate(us, ds_rate);
+% Downsampled to about 4 mm in transaxial direction in Ref
+dvs = decimate(vs, ds_rate);
 
 step_du = mean(diff(dus));
 step_dv = mean(diff(dvs));
 
-%% Grid
+%% X, Y grid
 % unit: mm
 [ugd,vgd] = meshgrid(us,vs); %detector
+% downsampled grid
 [dugd, dvgd] = meshgrid(dus,dvs); %detector
 
 %% Load Scatter Calibration
 sccalib = ScCalibFromXML(datafolder);
 
-%% Load Blk (comment out later)
-%{
-[Blk, Sec, BlkAirNorm] = BlkLoader(datafolder);
-% Detector point scatter correction
-Blk = DetectorPointScatterCorrection(Blk, geo);
-%}
+%% Blk scan
 sBlk = sum(Blk, 3);
 sAirNorm = sum(BlkAirNorm);
 
@@ -48,98 +49,88 @@ for ii=1:ngroup
     nbounds = [nbounds, tmp];
 end
 
-%% Scatter Correction
-% Iteration Number
-niter = 10;
+%% k(y): anti-scatter grid kernel
+ASG = ASGkernel(sccalib, geo, dus, dvs);
 
-% k(y): anti-scatter grid
-% ASG = ASGkernel(sccalib, geo, dus, dvs);
-ASG = ASGkernel(sccalib, geo, us, vs);
-
-%% --------------------- gamma in scatter estimation
-%% To debug
-
+%% Component Weights: gamma (gamma = 0 for SKS)
 gamma = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.ObjectScatterFit.gamma.Text);
+% unit: cm-> mm
+gamma = gamma /10;
 
-gamma = gamma/10;
+%% iteration number
+niter = 5;
+% relaxation factor in iteration
+lambda = 0.1;
 
+%% Primary signal matrix
 prim = zeros(size(proj));
 
-lambda = 0.01;
-
-for ii = 1:1 %size(proj, 3)
+for ii = 1: size(proj, 3)
+    if(~mod(ii,50))
+        display(ii);
+    end
+    
     % blk: I_0 unattenuated blk signal
     CF = sAirNorm/airnorm(ii);
-    
-    %{    
     blk = interp2(ugd, vgd, sBlk/CF, dugd, dvgd, 'linear', 0);       
+    
     % page: I_p primary signal
     % note: detector point spread deconvolution should be done first
     page = interp2(ugd, vgd, proj(:,:,ii), dugd, dvgd, 'linear', 0);
-    %}
-    
-    blk = sBlk/CF;
-    page = proj(:,:,ii);
-    step_du = mean(diff(us));
-    step_dv = mean(diff(vs));    
-    
+
     % Is initialization
-    Is = zeros(size(page));    
+    Is = zeros(size(page));
     
     %% Iterative Correction
     for jj = 1: niter
         % Is previous scatter map
         Is_prv = Is;
-        % estimate thickness
+        
+        % estimate thickness: mm
         thickness = ThicknessEstimator(blk, page, sccalib, step_du, step_dv);
         % smooth thickness
         thickness = SmoothThickness(thickness, sccalib, step_du, step_dv);
+        
         % Ri(x,y): group-based masks
         nmask = GroupMask(thickness, ngroup, nbounds);
+
         % gi(x,y): group-based form function
-%        gform = FormFunc(sccalib, dugd, dvgd);
-        gform = FormFunc(sccalib, ugd, vgd);
+        gform = FormFunc(sccalib, dugd, dvgd);
+        
+        % edge response function: about 7.5 cm inward
+        edgewt = EdgeResponse(thickness);
         
         % cei(x,y): group-based amplitude factors
-        cfactor = AmplitudeFactor(blk, page, sccalib);
-
-%{
-        edgewt = imbinarize(thickness, 'adaptive');
-        h = fspecial('average', [1, 3]);
-        edgewt = imfilter(edgewt, h);
-        edgewt = imfilter(edgewt, h);
-%}
-
+        cfactor = AmplitudeFactor(blk, page, edgewt, sccalib);
+        
         %% n-group summation
-        tmp1 = 0;
-        tmp2 = 0;
+        comp1 = 0;
+        comp2 = 0;
         for kk = 1: ngroup
             %% 2D fft
-            tmp1 = tmp1 + fft2(page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);
+            comp1 = comp1 + fft2(page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);
             %% 2D fft
-            tmp2 = tmp2 + fft2(thickness.*page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);            
+            comp2 = comp2 + fft2(thickness.*page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);            
         end
-        %% -------------------------  probably complex number ------------------
-        tmp1 = real(ifft2(tmp1));
-        tmp2 = real(ifft2(tmp2));
-        %% estimated scatter map
-        Is = (1 - gamma.*thickness).*tmp1 + gamma.*tmp2;
-        % Ip = Ip + lambda * (Is_prv - Is)
+        %% real components cutoff
+        comp1 = real(ifft2(comp1));
+        comp2 = real(ifft2(comp2));
+        %% fASKS scatter correction
+        Is = (1 - gamma.*thickness).*comp1 + gamma.*comp2;
         page = page + lambda * (Is_prv - Is);
-        page(page<0)=eps;
+        page(page<0) = eps;
     end
     
     %% Upsampling and cutoff for over-correction
     % measured intensity
-%    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'linear', 0);
-    SF = Is;
-    [s,l] = bounds(SF(:))
+    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'spline');
+    % SF = Is;
     SF(SF<0) = eps;
+
+    % Scatter signal cutoff
     SF = min(SF./proj(:,:,ii), 0.95);
-    % primary
+    % primary 
     prim(:,:,ii) = proj(:,:,ii).*(1 - SF);
-
 end
-
 
 end

@@ -30,4 +30,3 @@ thickness = inpaint_nans(thickness, 2);
 thickness = SmoothThickness(thickness, sccalib, step_du, step_dv);
 
 end
-
