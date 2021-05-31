@@ -84,8 +84,8 @@ if 0
 end
 %%
 if ~isvar('fsino'), printm 'fsino'
-    %%%%%%%%%%%%%%% What is ftab.fit.fmfun ????
-    %%%%%%% Maybe to generate spectrum-weighted realistic projections
+    %%%%%%% Generate spectrum-weighted realistic projections
+    % fm: [(Nd),MM]	nonlinear BH projection signals
 	fsino = ftab2.fit.fmfun(ssino);
 	im(5, sg.s, sg.ad, fsino, 'f sino'), cbar
 prompt
@@ -95,9 +95,9 @@ if ~isvar('yi'), printm 'yi'
 %	yi = fsino; % no noise
 %	wi = 1; % unweighted
 
-    % ideal signal (only poisson noise only)
+    % flood field
 	f.I0 = 1e6; % high snr
-    %%%%%%%%%%%%%% fsino: ???? realistic sinogram ?????
+    %%%%%%%%%%%%%% fsino: nonlinear BH singals with poisson noise only
 	yi = poisson(f.I0 * exp(-fsino), 7) / f.I0;
 	wi = yi;
     % log proj
@@ -118,6 +118,10 @@ end
 
 if ~isvar('fbpc'), printm 'fbpc'
     % log proj -> water thickness (with water BH inverse mapping)
+    % LUT (uu, vv, proj): 
+    %   1) location(uu,vv) -> filter thickness(uu,vv) 
+    %       -> attenuated spectra(kk)
+    %   2) log proj, nonlinear signal -> thickness
 	tmp = ftab1.inv1.fun(yi); % water BH correction
 	fbpc = fbp2(tmp, f.fbp, 'window', 'hanning,0.8');
 	im(3, fbpc, 'fbp corrected', clim), cbar
