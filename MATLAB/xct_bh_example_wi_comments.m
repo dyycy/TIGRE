@@ -53,19 +53,24 @@ if ~isvar('ftab2'), printm 'ftab2'
 	mas1 = xray_read_mac('water');
     %  tables/models of f_m, its inverse, and its derivatives for
     %  (dual-energy) CT imaging and beam hardening correction
+    % xrs: incident x-ray spectrum
+    % mas: material attenuation 
+    % sls: sampling length
     % ctype: curve fit for de_ftab_curv()
     % ftype: fit type for de_ftab_fit() (default: '')
+    % ----- fit_args: not clear yet
 	ftab1 = de_ftab(xrs, mas1, 'sls', sls1, 'ctype', 'newt', ...
 		'ftype','exp', 'fit_args', {'kev', 10:5:160, 'mac', []});
 
-	sls2 = de_ftab_sls('max', [50 40], 'n', [101 11]);
+	% water, bone @ 160 kVp
+    sls2 = de_ftab_sls('max', [50 40], 'n', [101 11]);
 	mas2 = xray_read_mac({'water', 'bone'});
 	ftab2 = de_ftab(xrs, mas2, 'sls', sls2, 'ctype', 'newt', ...
 		'ftype','exp', 'fit_args', {'kev', 10:5:160, 'mac', []});
 
 	ftab2.plot_fm
 %	ftab1.inv1.plot % todo: fails - fix!
-	ftab1.inv1.plot(ftab1.fit);
+%	ftab1.inv1.plot(ftab1.fit);
 %	im subplot 2
 prompt
 end
@@ -75,22 +80,27 @@ if 0
 	tmp = ftab1.inv1.fun(ftab2.fm);
 	plot(sls1.sl{1}, tmp)
 	xlabel 's1', ylabel ''
-return
+%return
 end
-
+%%
 if ~isvar('fsino'), printm 'fsino'
+    %%%%%%%%%%%%%%% What is ftab.fit.fmfun ????
+    %%%%%%% Maybe to generate spectrum-weighted realistic projections
 	fsino = ftab2.fit.fmfun(ssino);
 	im(5, sg.s, sg.ad, fsino, 'f sino'), cbar
 prompt
 end
-
+%%
 if ~isvar('yi'), printm 'yi'
 %	yi = fsino; % no noise
 %	wi = 1; % unweighted
 
+    % ideal signal (only poisson noise only)
 	f.I0 = 1e6; % high snr
+    %%%%%%%%%%%%%% fsino: ???? realistic sinogram ?????
 	yi = poisson(f.I0 * exp(-fsino), 7) / f.I0;
 	wi = yi;
+    % log proj
 	yi = -log(max(yi, 1/f.I0));
 	im(6, sg.s, sg.ad, yi, 'yi sino'), cbar
 	im(3, sg.s, sg.ad, wi, 'wi sino'), cbar
@@ -99,6 +109,7 @@ end
 
 if ~isvar('fbpu'), printm 'fbpu'
 	f.fbp = fbp2(sg, ig);
+    % log proj/miu -> thickness (only wi effective water mac)
 	tmp = yi / ftab2.mac.bar(1); % scale correct for effective water mac
 	fbpu = fbp2(tmp, f.fbp, 'window', 'hanning,0.8');
 	im(2, fbpu, 'fbp uncorrected', clim), cbar
@@ -106,11 +117,13 @@ prompt
 end
 
 if ~isvar('fbpc'), printm 'fbpc'
+    % log proj -> water thickness (with water BH inverse mapping)
 	tmp = ftab1.inv1.fun(yi); % water BH correction
 	fbpc = fbp2(tmp, f.fbp, 'window', 'hanning,0.8');
 	im(3, fbpc, 'fbp corrected', clim), cbar
 
 	prompt
+    % profile comparison
 	if 1
 		clf
 		iy = ig.ny/2+1; ix = 1:ig.nx;
@@ -127,12 +140,14 @@ if ~isvar('G'), printm 'G'
 	if has_mex_jf
 		f.tab_type = {'square/strip', 'chat', 0, 'Ltab', ...
 			1000, 'strip_width', ig.dx};
+        % system matrix
 		G = Gtomo2_table(sg, ig, f.tab_type, 'nthread', 1);
 	else
 		G = Gtomo2_strip(sg, ig);
 	end
 
 	if 0
+        % forward projection
 		tmp = G * xtrue;
 		im(tmp), cbar
 		max_percent_diff(tmp, ssino)
@@ -140,17 +155,20 @@ if ~isvar('G'), printm 'G'
 end
 
 if ~isvar('fbpb'), printm 'fbpb' % "bone only recon"
+    % bone only images in water-corrected images
 	tmp = fbpc .* (fbpc > 1.3); % bone only image
 	im(tmp)
 
+    % forward project bone only images
 	tmp = G * tmp;
 	tmp = tmp.^2;
 	fbpb = fbp2(tmp, f.fbp, 'window', 'hanning,0.8');
 	im(fbpb)
-return
+ return
 end
 
 if 1 % test it - it kind of works!
+    % img = img_waterBH + scale * img_bone_components
 	scale =  0.005; % empirical value
 	fbp1 = fbpc + scale * fbpb;
 
@@ -165,8 +183,10 @@ if 1 % test it - it kind of works!
 	end
 
 	clim = 1 + [-1 1] * 0.10;
+    % fbpu: effective energy corrected
+    % fbpc: water BH
 	im(stackup(xtrue, fbpu, fbpc, fbp1), clim), cbar
-return
+ return
 end
 
 
@@ -184,12 +204,13 @@ end
 %
 % corrected iterative recon
 %
-
+% unfinished work in the following
 if ~isvar('xc'), printm 'xc'
 	f.niter = 400;
+    % fbpu: effective energy corrected
 	xinit = fbpu;
 %	xinit = fbpc > 0.9;
-	data = {yi(:), wi(:), ftab, 1};
+	data = {yi(:), wi(:), ftab1, 1};
 	dercurv = @wls_water_dercurv;
 	tmp = pl_pcg_qs_ls(ig.maskit(xinit), G, ...
 		data, dercurv, R, ...
