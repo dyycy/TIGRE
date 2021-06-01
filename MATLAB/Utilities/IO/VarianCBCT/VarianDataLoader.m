@@ -35,7 +35,9 @@ proj = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
 %% Airnorm and Logarithmic Normalization
 proj = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm);
 
-%% Beam Hardening Correction via MIRT toolkit
+%% Beam Hardening Correction: refer to MIRT toolkit
+% Key calibration information
+BHCalib = BHCalibFromXML(datafolder, ScanXML);
 
 
 
