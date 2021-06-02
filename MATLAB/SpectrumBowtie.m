@@ -1,6 +1,6 @@
 function BHCalib = SpectrumBowtie(geo, BHCalib)
-%SPECTRAPROCESS Summary of this function goes here
-%   Detailed explanation goes here
+% SPECTRAPROCESS Summary of this function goes here
+% Detailed explanation goes here
 
 %% Thin window filter has been applied to the spectrum already
 
@@ -34,11 +34,14 @@ for ii = 1:length(sl)
 end
 
 %% attenuated spectra
-cutoff = length(BHCalib.source.spec);
-BHCalib.specLUT = atten_tab(:,1:cutoff).*BHCalib.source.spec;
-%% sampling length
+% this look-up table can be used for further application
+kVp = length(BHCalib.source.spec);
+BHCalib.bowtie.specLUT = atten_tab(:,1:kVp).*BHCalib.source.spec;
+
+%% sampling length: mm
 BHCalib.bowtie.sl = sl;
-%% tranvers length of each detector unit
+
+%% tranvers length of each detector unit: mm
 BHCalib.bowtie.ulgd = ulgd;
 
 end
