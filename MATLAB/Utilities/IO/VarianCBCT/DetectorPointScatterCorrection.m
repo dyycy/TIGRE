@@ -31,6 +31,10 @@ dus = downsample(us, 26);
 % about 4 mm in axial direction
 dvs = downsample(vs, 10);
 
+%ds_rate = 8;
+%dus = decimate(us, ds_rate);
+%dvs = decimate(vs, ds_rate);
+
 %% Grid mesh
 [uu,vv] = meshgrid(us,vs); %detector
 [duu, dvv] = meshgrid(dus,dvs); %detector

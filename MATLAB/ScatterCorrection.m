@@ -123,12 +123,21 @@ for ii = 1: size(proj, 3)
     
     %% Upsampling and cutoff for over-correction
     % measured intensity
-    SF = interp2(dugd, dvgd, Is, ugd, vgd, 'spline');
+    scmap = interp2(dugd, dvgd, Is, ugd, vgd, 'linear');
+    % extrolation errors
+    scmap(isnan(scmap)) = eps;
     % SF = Is;
-    SF(SF<0) = eps;
+    scmap(scmap<0) = eps;
 
-    % Scatter signal cutoff
-    SF = min(SF./proj(:,:,ii), 0.95);
+    % scatter fraction
+    SF = scmap./proj(:,:,ii);
+    % in case of zeros in proj
+    SF(SF==Inf) = 0;
+    % mediant filtering
+    SF = medfilt2(SF, [3 3]);
+
+    % Scatter fraction cutoff
+    SF = min(SF, 0.95);    
     % primary 
     prim(:,:,ii) = proj(:,:,ii).*(1 - SF);
 end

@@ -1,4 +1,4 @@
-function BHCalib = SpectrumBowtie(geo, BHCalib)
+function BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib)
 %SPECTRAPROCESS Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -34,9 +34,11 @@ for ii = 1:length(sl)
 end
 
 %% look-up table for bowtie-induced attenuation
-cutoff = length(BHCalib.source.spec);
+kVp = length(BHCalib.source.spec);
 % specLUT(sampling length, energy bin)
-BHCalib.specLUT = atten_tab(:,1:cutoff).*BHCalib.source.spec;
+BHCalib.bowtie.specLUT = atten_tab(:,1:kVp).*BHCalib.source.spec;
+% miu
+BHCalib.object.ac =BHCalib.object.ac(1:kVp);
 
 %% sampling length
 BHCalib.bowtie.sl = sl;
