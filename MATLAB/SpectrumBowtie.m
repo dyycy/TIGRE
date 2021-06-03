@@ -33,11 +33,14 @@ for ii = 1:length(sl)
     atten_tab(ii,:) = exp(-sl(ii).* BHCalib.bowtie.ac');
 end
 
-%% attenuated spectra
+%% look-up table for bowtie-induced attenuation
 cutoff = length(BHCalib.source.spec);
+% specLUT(sampling length, energy bin)
 BHCalib.specLUT = atten_tab(:,1:cutoff).*BHCalib.source.spec;
+
 %% sampling length
 BHCalib.bowtie.sl = sl;
+
 %% tranvers length of each detector unit
 BHCalib.bowtie.ulgd = ulgd;
 
