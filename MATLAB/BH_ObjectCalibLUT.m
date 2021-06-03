@@ -30,13 +30,8 @@ end
 % non ideal projection signal LUT: [bowtie.sl, object_sl]
 BHCalib.object.calibLUT = calibLUT;
 
-% grids for interpolation: bowtie thickness, obgd
-% be careful with the X-Y orientation in meshgrid
-[obj_gd, bt_gd] = meshgrid(object_sl, BHCalib.bowtie.sl);
-
-% grid for LUT
-BHCalib.object.xgdLUT = obj_gd;
-BHCalib.object.ygdLUT = bt_gd;
+% object sampling length
+BHCalib.object.sl = object_sl;
 
 end
 

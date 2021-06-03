@@ -31,14 +31,14 @@ Blk = DetectorPointScatterCorrection(Blk, geo);
 
 %% Scatter Correction
 disp('Scatter correction: ')
-projsc = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
+proj_sc = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
 
 %% Airnorm and Logarithmic Normalization
-projlg = LogNormal(projsc, angles, airnorm, Blk, Sec, BlkAirNorm);
+proj_lg = LogNormal(proj_sc, angles, airnorm, Blk, Sec, BlkAirNorm);
 disp('Log Normalization is performed.')
 
 % all negative to zeros
-projlg(projlg<0) = 0;
+proj_lg(proj_lg<0) = 0;
 
 %% Beam Hardening Correction: refer to MIRT toolkit
 % Key calibration information
@@ -47,8 +47,8 @@ BHCalib = BHCalibFromXML(datafolder, ScanXML);
 
 
 %% Mediate filtering along colume-orth
-for ii = 1:size(projlg,3)
-    projlg(:,:,ii) = ordfilt2(projlg(:,:,ii), 5, ones(1,9));
+for ii = 1:size(proj_lg,3)
+    proj_lg(:,:,ii) = ordfilt2(proj_lg(:,:,ii), 5, ones(1,9));
 end
 
 % in case of abnormlies
