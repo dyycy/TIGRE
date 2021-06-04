@@ -30,26 +30,37 @@ proj = DetectorPointScatterCorrection(proj, geo);
 Blk = DetectorPointScatterCorrection(Blk, geo);
 
 %% Scatter Correction
-disp('Scatter correction: ')
+disp('Scatter correction onging: ')
 proj_sc = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
+disp('Scatter correction is completed.')
+
 
 %% Airnorm and Logarithmic Normalization
 proj_lg = LogNormal(proj_sc, angles, airnorm, Blk, Sec, BlkAirNorm);
-disp('Log Normalization is performed.')
+disp('Log Normalization is completed.')
 
 % all negative to zeros
 proj_lg(proj_lg<0) = 0;
 
+% mediant filtering along colume-orth
+proj_lg = medfilt_col(proj_lg);
+
 %% Beam Hardening Correction: refer to MIRT toolkit
 % Key calibration information
 BHCalib = BHCalibFromXML(datafolder, ScanXML);
+% Precompute bowtie attenuated spectra
+BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
+% Build bowtie attenuated spectra LUT
+BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
+% Build reference object (water) attanuation LUT
+BHCalib = BH_ObjectCalibLUT(BHCalib);
+% BH correction via reference object (water)
+proj_BH = BH_ObjectRemapping(BHCalib, projlg);
 
 
 
 %% Mediate filtering along colume-orth
-for ii = 1:size(proj_lg,3)
-    proj_lg(:,:,ii) = ordfilt2(proj_lg(:,:,ii), 5, ones(1,9));
-end
+proj = medfilt_col(proj);
 
 % in case of abnormlies
 proj(isnan(proj)) = 0;
@@ -73,9 +84,22 @@ else
     angles = flip(angles);
 end
 
-
 %%
 
 % img=FDK(proj,geo,angles);
 
 end
+
+
+%% Mediant filtering along colume-orth
+%{
+function proj = medfilt_col(proj)
+
+% 3D projection matrix
+for ii = 1:size(proj,3)
+    proj(:,:,ii) = ordfilt2(proj(:,:,ii), 5, ones(1,9));
+end
+
+end
+%}
+

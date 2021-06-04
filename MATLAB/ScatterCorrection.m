@@ -116,14 +116,14 @@ for ii = 1: size(proj, 3)
         comp1 = real(ifft2(comp1));
         comp2 = real(ifft2(comp2));
         %% fASKS scatter correction
-        Is = (1 - gamma.*thickness).*comp1 + gamma.*comp2;
+        Is = (1 - gamma.*thickness).*comp1 + gamma.*comp2; 
         page = page + lambda * (Is_prv - Is);
         page(page<0) = eps;
     end
     
     %% Upsampling and cutoff for over-correction
     % measured intensity
-    scmap = interp2(dugd, dvgd, Is, ugd, vgd, 'linear');
+    scmap = interp2(dugd, dvgd, Is, ugd, vgd, 'spline');
     % extrolation errors
     scmap(isnan(scmap)) = eps;
     % SF = Is;
@@ -132,7 +132,9 @@ for ii = 1: size(proj, 3)
     % scatter fraction
     SF = scmap./proj(:,:,ii);
     % in case of zeros in proj
-    SF(SF==Inf) = 0;
+    SF(SF==Inf) = NaN;
+    SF(SF>1000) = NaN;
+    SF = inpaint_nans(SF,0);
     % mediant filtering
     SF = medfilt2(SF, [3 3]);
 
