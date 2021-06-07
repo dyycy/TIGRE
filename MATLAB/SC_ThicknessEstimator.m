@@ -1,4 +1,4 @@
-function thickness = ThicknessEstimator(blk, page, sccalib, step_du, step_dv)
+function thickness = SC_ThicknessEstimator(blk, page, sccalib, step_du, step_dv)
 %% Estimate Water-Equivalent Thickness (2D)
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:
@@ -27,6 +27,6 @@ thickness = inpaint_nans(thickness, 2);
 
 %% Smooth the estimated thickness
 % thickness(vv, uu, ntheta)
-thickness = SmoothThickness(thickness, sccalib, step_du, step_dv);
+thickness = SC_SmoothThickness(thickness, sccalib, step_du, step_dv);
 
 end

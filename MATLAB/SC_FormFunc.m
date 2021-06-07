@@ -1,4 +1,4 @@
-function gform = FormFunc(sccalib, dugd, dvgd)
+function gform = SC_FormFunc(sccalib, dugd, dvgd)
 %% Thickness-based Multiple Group Form Function kernels
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Date: 2021-05-18

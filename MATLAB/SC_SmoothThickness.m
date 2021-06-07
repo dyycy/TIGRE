@@ -1,4 +1,4 @@
-function thickness = SmoothThickness(thickness, sccalib, step_du, step_dv)
+function thickness = SC_SmoothThickness(thickness, sccalib, step_du, step_dv)
 %% Gaussian Filter to Smooth EstimatedThickness 
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Input:

@@ -1,4 +1,4 @@
-function nmask = GroupMask(thickness, ngroup, nbounds)
+function nmask = SC_GroupMask(thickness, ngroup, nbounds)
 %% Generate n-group masks for estimated thickness (2D)
 %
 % SYNOPSIS: nmask = GroupMask(thickness, nbounds)

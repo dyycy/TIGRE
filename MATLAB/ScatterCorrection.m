@@ -7,7 +7,7 @@ function prim = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, ge
 
 %% Center Coordinates
 %unit: mm
-offset=geo.offDetector;
+offset = geo.offDetector;
 offset = [0, 0];
 
 % grid unit: mm
@@ -50,7 +50,7 @@ for ii=1:ngroup
 end
 
 %% k(y): anti-scatter grid kernel
-ASG = ASGkernel(sccalib, geo, dus, dvs);
+ASG = SC_ASGkernel(sccalib, geo, dus, dvs);
 
 %% Component Weights: gamma (gamma = 0 for SKS)
 gamma = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.ObjectScatterFit.gamma.Text);
@@ -87,21 +87,21 @@ for ii = 1: size(proj, 3)
         Is_prv = Is;
         
         % estimate thickness: mm
-        thickness = ThicknessEstimator(blk, page, sccalib, step_du, step_dv);
+        thickness = SC_ThicknessEstimator(blk, page, sccalib, step_du, step_dv);
         % smooth thickness
-        thickness = SmoothThickness(thickness, sccalib, step_du, step_dv);
+        thickness = SC_SmoothThickness(thickness, sccalib, step_du, step_dv);
         
         % Ri(x,y): group-based masks
-        nmask = GroupMask(thickness, ngroup, nbounds);
+        nmask = SC_GroupMask(thickness, ngroup, nbounds);
 
         % gi(x,y): group-based form function
-        gform = FormFunc(sccalib, dugd, dvgd);
+        gform = SC_FormFunc(sccalib, dugd, dvgd);
         
         % edge response function: about 7.5 cm inward
-        edgewt = EdgeResponse(thickness);
+        edgewt = SC_EdgeResponse(thickness);
         
         % cei(x,y): group-based amplitude factors
-        cfactor = AmplitudeFactor(blk, page, edgewt, sccalib);
+        cfactor = SC_AmplitudeFactor(blk, page, edgewt, sccalib);
         
         %% n-group summation
         comp1 = 0;

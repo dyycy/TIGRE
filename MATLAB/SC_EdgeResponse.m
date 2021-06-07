@@ -1,4 +1,4 @@
-function edgewt = EdgeResponse(thickness)
+function edgewt = SC_EdgeResponse(thickness)
 % EDGERESPONSE Summary of this function goes here
 % Date: 2021-05-24
 
