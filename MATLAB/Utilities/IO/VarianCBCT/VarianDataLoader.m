@@ -34,7 +34,6 @@ disp('Scatter correction onging: ')
 proj_sc = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
 disp('Scatter correction is completed.')
 
-
 %% Airnorm and Logarithmic Normalization
 proj_lg = LogNormal(proj_sc, angles, airnorm, Blk, Sec, BlkAirNorm);
 disp('Log Normalization is completed.')
@@ -56,8 +55,6 @@ BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
 BHCalib = BH_ObjectCalibLUT(BHCalib);
 % BH correction via reference object (water)
 proj_BH = BH_ObjectRemapping(BHCalib, projlg);
-
-
 
 %% Mediate filtering along colume-orth
 proj = medfilt_col(proj);
@@ -84,9 +81,8 @@ else
     angles = flip(angles);
 end
 
-%%
-
-% img=FDK(proj,geo,angles);
+%% 
+img = FDK(proj,geo,angles);
 
 end
 
