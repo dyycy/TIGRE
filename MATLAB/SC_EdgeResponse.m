@@ -1,6 +1,10 @@
 function edgewt = SC_EdgeResponse(thickness)
-% EDGERESPONSE Summary of this function goes here
+% Ideal model: k =  EdgeCoef0, (0.4), EdgeRange = EdgeRangeMM, (80)
+% i.e., y = k*x + 0.78
+% Herein, we used an approximation method to model the edge response
+% function
 % Date: 2021-05-24
+
 
 % Emperical Value
 edgewt = double(imbinarize(thickness, 50));

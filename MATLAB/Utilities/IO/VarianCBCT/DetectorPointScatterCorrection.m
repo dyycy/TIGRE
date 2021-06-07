@@ -6,7 +6,9 @@ function proj = DetectorPointScatterCorrection(proj, geo)
 
 %% Empirical values from reference paper
 % unit: cm-2
-a0 = 3.43;
+% a0 = 3.43;
+a0 = 1;
+
 a1 = 0.000309703536035;
 % unit: cm-1
 a2 = 0.546566915157327;
@@ -15,6 +17,8 @@ a3 = 0.311272841141691;
 a4 = 0.002472148007134;
 a5 = -12.6606856375944;
 
+CoverSPR = 0.04;
+
 % unit: mm
 offset=geo.offDetector;
 
@@ -22,8 +26,10 @@ offset=geo.offDetector;
 us = ((-geo.nDetector(1)/2+0.5):1:(geo.nDetector(1)/2-0.5))*geo.dDetector(1) + offset(1);
 vs = ((-geo.nDetector(2)/2+0.5):1:(geo.nDetector(2)/2-0.5))*geo.dDetector(2) + offset(2);
 % unit mm - > cm
-us = us/10;
-vs = vs/10;
+% unit converter: 1/10 for mm-> cm
+unit_cvt = 1/10;
+us = us * unit_cvt;
+vs = vs * unit_cvt;
 
 %% Downsampling
 % about 10 mm in axial direction
@@ -31,9 +37,10 @@ dus = downsample(us, 26);
 % about 4 mm in axial direction
 dvs = downsample(vs, 10);
 
-%ds_rate = 8;
-%dus = decimate(us, ds_rate);
-%dvs = decimate(vs, ds_rate);
+ds_rate = 8;
+dus = decimate(us, ds_rate);
+dvs = decimate(vs, ds_rate);
+
 
 %% Grid mesh
 [uu,vv] = meshgrid(us,vs); %detector
@@ -41,7 +48,11 @@ dvs = downsample(vs, 10);
 
 %% Scatter convolution kernel
 grid = sqrt(duu.^2 + dvv.^2);
-hd = a0*(a1* exp(-a2 * grid)) + a3 * (exp( -a4 * ( grid - a5).^3 ));
+% a0 is the normalization factor
+hd = a0*( a1* exp(-a2 * grid) + a3 * (exp( -a4 * ( grid - a5).^3 )));
+
+% normalized to 4% SPR coverage
+hd = CoverSPR/sum(hd(:)) .* hd;
 
 %% 2D Convolution with downsampling and upsampling
 for ii = 1:size(proj,3)
@@ -50,12 +61,17 @@ for ii = 1:size(proj,3)
     sc = conv2(page, hd, 'same');
     % upsample the scatter distribution to the same grid level as the
     % measured intensity
-    scpage = interp2(duu, dvv, sc, uu, vv, 'spline', 0);
+    scpage = interp2(duu, dvv, sc, uu, vv, 'spline');
     % primary = measure - scatter
     proj(:,:,ii) = proj(:,:,ii) - scpage;
 end
 
 %% Cutoff for over-correction
+proj(proj<0) = NaN;
+for ii = 1:size(proj,3)
+    % default fast extrapolation: robust for noise and holes at boundaries
+    proj(:,:,ii) = inpaint_nans(proj(:,:,ii), 2);
+end
 proj(proj<0) = eps;
 
 end

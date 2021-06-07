@@ -7,15 +7,20 @@ function gform = SC_FormFunc(sccalib, dugd, dvgd)
 %% group number
 ngroup = length(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel);
 
+% mm -> cm
+unit_cvt = 1/10;
+dugd = dugd *unit_cvt;
+dvgd = dvgd * unit_cvt;
+
 %% Kernel form function groups
 % Form function groups
 gform = [];
 
 for ii=1:ngroup
     tmp = sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{ii}.ObjectScatterFit;
-    % unit: cm -> mm
-    sigma1 = str2double(tmp.sigma1.Text) * 10;
-    sigma2 = str2double(tmp.sigma2.Text) * 10;
+    % unit: cm^(-1)
+    sigma1 = str2double(tmp.sigma1.Text);
+    sigma2 = str2double(tmp.sigma2.Text);
     % unitless
     B = str2double(tmp.B.Text);
     grid2 = dugd.^2 +dvgd.^2;

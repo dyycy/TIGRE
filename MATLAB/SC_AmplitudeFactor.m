@@ -1,4 +1,4 @@
-function cfactor = AmplitudeFactor(blk, page, edgewt, sccalib)
+function cfactor = SC_AmplitudeFactor(blk, page, edgewt, sccalib)
 % Amplitude Factor: ce_i with Edge Response Function (edgewt)
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Author: Yi Du (yi.du@hotmail.com)
@@ -14,7 +14,9 @@ for ii=1:ngroup
     tmp = sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{ii}.ObjectScatterFit;
     % Amplitude Factor
     % unit: cm^2 - > mm^2
-    A = str2double(tmp.A.Text) / 100;
+%    A = str2double(tmp.A.Text) / 100;
+    % unit: mm - > cm
+    A = str2double(tmp.A.Text) / 10;
     % unitless
     alpha = str2double(tmp.alpha.Text);
     beta = str2double(tmp.beta.Text);
