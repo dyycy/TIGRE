@@ -104,14 +104,15 @@ sc_proj_lg(sc_proj_lg<0) = 0;
 sc_proj_lg = medfilt_col(sc_proj_lg);
 
 % Gantry Rotation correction
-% Clockwise
+%{ 
+Clockwise
 if(angles(end) - angles(1)>0)
     sc_proj_lg = flip(sc_proj_lg, 3);
 % Counter-clockwise -> Clockwise
 else
     theta = flip(theta);
 end
-
+%}
 %% Part 3: with detector scatter correction
 tmp_proj = single(sc_proj_lg);
 sc_img=FDK(tmp_proj,geo,theta);
@@ -177,7 +178,7 @@ imshow(sc_img(:,:, slice_idx) - dsc_img(:,:,slice_idx),[-width width]/20), title
 
 
 subplot(2,2,4)
-imshow(bh_img(:,:, slice_idx),[0 3]), title('sc+BH')
+imshow(bh_img(:,:, slice_idx),[0 2]), title('sc+BH')
 
 line_idx = 256;
 figure(2)
@@ -188,18 +189,26 @@ plot(sc_img(line_idx, :, slice_idx),'g'), hold on
 
 %%
 %{
+diameter = 500;
+raw_img = ROIMask(raw_img, diameter);
 raw_img(raw_img<0) =0;
 filename = 'raw_inserts';
 write_nrrd(filename, raw_img, geo);
 
+diameter = 500;
+dsc_img = ROIMask(dsc_img, diameter);
 dsc_img(dsc_img<0) =0;
 filename = 'dsc_inserts';
 write_nrrd(filename, dsc_img, geo);
 
+diameter = 500;
+sc_img = ROIMask(sc_img, diameter);
 sc_img(sc_img<0) =0;
 filename = 'sc_inserts';
 write_nrrd(filename, sc_img, geo);
 
+diameter = 500;
+bh_img = ROIMask(bh_img, diameter);
 bh_img(bh_img<0) =0;
 filename = 'bh_inserts';
 write_nrrd(filename, bh_img, geo);
