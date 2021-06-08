@@ -20,8 +20,8 @@ proj_BH = zeros(size(projlg));
 for jj = 1: nCol
     tl_v = ulgd(1, jj);
     % model the LUT for specific bowtie thickness
-    proj_signal_LUT = interp1(BHCalib.bowtie.sl, calibLUT, tl_v, 'linear');
-    proj_BH(:,jj,:) = interp1(proj_signal_LUT, object_sl, projlg(:,jj,:), 'linear');
+    proj_signal_LUT = interp1(BHCalib.bowtie.sl, calibLUT, tl_v, 'spline');
+    proj_BH(:,jj,:) = interp1(proj_signal_LUT, object_sl, projlg(:,jj,:), 'spline');
 end
 
 end

@@ -68,7 +68,7 @@ prim = zeros(size(proj));
 
 for ii = 1: size(proj, 3)
     if(~mod(ii,50))
-        display(ii);
+        display([num2str(ii) '/' num2str(size(proj, 3))]);
     end
     
     % blk: I_0 unattenuated blk signal
@@ -120,7 +120,7 @@ for ii = 1: size(proj, 3)
         comp2 = real(ifft2(comp2));
         %% fASKS scatter correction
         Is = (1 - gamma .*thickness).*comp1 + gamma.*comp2; 
-        sum(sum(Is_prv - Is))
+        %sum(sum(Is_prv - Is))
         page = page + lambda * (Is_prv - Is);
         page(page<0) = eps;
     end

@@ -21,7 +21,7 @@ ul = interp1(BHCalib.bowtie.uu, BHCalib.bowtie.thickness, ub);
 % tranverse length grid: mm
 ulgd = repmat(ul, [length(vs), 1]);
 
-%% attenuation look-up table
+%% bowtie material attenuation look-up table
 [Min, Max] = bounds(ulgd(:));
 % sampling length
 sl = linspace(Min, Max, 100);
@@ -33,7 +33,7 @@ for ii = 1:length(sl)
     atten_tab(ii,:) = exp(-sl(ii).* BHCalib.bowtie.ac');
 end
 
-%% look-up table for bowtie-induced attenuation
+%% bowtie-attenuated spectra look-up table
 kVp = length(BHCalib.source.spec);
 % specLUT(sampling length, energy bin)
 BHCalib.bowtie.specLUT = atten_tab(:,1:kVp).*BHCalib.source.spec;

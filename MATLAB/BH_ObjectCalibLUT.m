@@ -19,6 +19,8 @@ calibLUT = zeros(length(BHCalib.bowtie.sl), length(object_sl));
 for ii = 1: length(BHCalib.bowtie.sl)    
     % object thickness -> 
     spec = specLUT(ii,:);
+%    spec = specLUT(1,:);
+
     for jj = 1:length(object_sl)
         % non-ideal attenuated signal
         tmp = spec .* exp(-object_sl(jj).* miu);

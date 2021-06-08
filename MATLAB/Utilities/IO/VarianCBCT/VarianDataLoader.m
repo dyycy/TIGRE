@@ -38,13 +38,14 @@ disp('Scatter correction is completed.')
 proj_lg = LogNormal(proj_sc, angles, airnorm, Blk, Sec, BlkAirNorm);
 disp('Log Normalization is completed.')
 
-% all negative to zeros
-proj_lg(proj_lg<0) = 0;
+% remove anomolies
+proj_lg = ZeroAnomoly(proj_lg); 
 
 % mediant filtering along colume-orth
 proj_lg = medfilt_col(proj_lg);
 
-%% Beam Hardening Correction: refer to MIRT toolkit
+%% Beam Hardening Correction: refer to MIRT toolkit: to-do work
+%{
 % Key calibration information
 BHCalib = BHCalibFromXML(datafolder, ScanXML);
 % Precompute bowtie attenuated spectra
@@ -54,48 +55,19 @@ BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
 % Build reference object (water) attanuation LUT
 BHCalib = BH_ObjectCalibLUT(BHCalib);
 % BH correction via reference object (water)
-proj_BH = BH_ObjectRemapping(BHCalib, projlg);
+proj_BH = BH_ObjectRemapping(BHCalib, proj_lg);
+%} 
 
-%% Mediate filtering along colume-orth
-proj = medfilt_col(proj);
+%% Remove anomalies
+proj_lg = ZeroAnomoly(proj_lg); 
 
-% in case of abnormlies
-proj(isnan(proj)) = 0;
-proj(isinf(proj)) = 0;
+%% Gantry and Image Rotation correction
+[proj_lg, angles] = ImgOrient(proj_lg, angles);
 
-% all negative to zeros
-proj(proj<0) = 0;
-
+%% Reconstruction 
 % double to single
-proj = single(proj);
+proj_lg = single(proj_lg);
 
-% degree to rad
-angles = angles/180*pi;
-
-%% Gantry Rotation correction
-% Clockwise
-if(angles(end) - angles(1)>0)
-    proj = flip(proj, 3);
-% Counter-clockwise -> Clockwise
-else
-    angles = flip(angles);
-end
-
-%% 
-img = FDK(proj,geo,angles);
+imgScFDK = FDK(proj_lg, geo, angles);
 
 end
-
-
-%% Mediant filtering along colume-orth
-%{
-function proj = medfilt_col(proj)
-
-% 3D projection matrix
-for ii = 1:size(proj,3)
-    proj(:,:,ii) = ordfilt2(proj(:,:,ii), 5, ones(1,9));
-end
-
-end
-%}
-
