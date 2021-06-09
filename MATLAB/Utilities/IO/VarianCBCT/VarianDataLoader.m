@@ -1,4 +1,4 @@
-function [proj,geo, angles] = VarianDataLoader(datafolder, varargin)
+function [proj_lg, geo, angles] = VarianDataLoader(datafolder, varargin)
 % VarianDataLoader: Loads Varian CBCT projection, geomtry and angles data
 %   Optional parameter: Motion lag correction. Default True. 
 %
@@ -64,10 +64,11 @@ proj_lg = ZeroAnomoly(proj_lg);
 %% Gantry and Image Rotation correction
 [proj_lg, angles] = ImgOrient(proj_lg, angles);
 
-%% Reconstruction 
-% double to single
+%% double to single
 proj_lg = single(proj_lg);
 
-imgScFDK = FDK(proj_lg, geo, angles);
-
+% imgScFDK = FDK(proj_lg, geo, angles);
+%% Audio signal 
+load train;
+sound(y,Fs)
 end

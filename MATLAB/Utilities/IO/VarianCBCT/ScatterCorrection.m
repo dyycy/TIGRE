@@ -107,8 +107,8 @@ for ii = 1: size(proj, 3)
         % mm -> cm
         thickness = thickness * mm2cm;
         %% n-group summation
-        comp1 = 0;
-        comp2 = 0;
+        comp1 = zeros(size(page));
+        comp2 = zeros(size(page));
         for kk = 1: ngroup
             %% 2D fft
             comp1 = comp1 + fft2(page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);
