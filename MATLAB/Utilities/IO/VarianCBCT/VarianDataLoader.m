@@ -50,8 +50,6 @@ proj_lg = medfilt_col(proj_lg);
 BHCalib = BHCalibFromXML(datafolder, ScanXML);
 % Precompute bowtie attenuated spectra
 BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
-% Build bowtie attenuated spectra LUT
-BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
 % Build reference object (water) attanuation LUT
 BHCalib = BH_ObjectCalibLUT(BHCalib);
 % BH correction via reference object (water)
@@ -59,7 +57,7 @@ proj_BH = BH_ObjectRemapping(BHCalib, proj_lg);
 %} 
 
 %% Remove anomalies
-proj_lg = ZeroAnomoly(proj_lg); 
+proj_lg = ZeroAnomoly(proj_BH); 
 
 %% Gantry and Image Rotation correction
 [proj_lg, angles] = ImgOrient(proj_lg, angles);
@@ -67,8 +65,10 @@ proj_lg = ZeroAnomoly(proj_lg);
 %% double to single
 proj_lg = single(proj_lg);
 
-% imgScFDK = FDK(proj_lg, geo, angles);
+% imgFDK = FDK(proj_lg, geo, angles);
+% imcroped=cropCBCT(imgFDK, geo);
+
 %% Audio signal 
-load train;
-sound(y,Fs)
+%load train;
+%sound(y,Fs)
 end
