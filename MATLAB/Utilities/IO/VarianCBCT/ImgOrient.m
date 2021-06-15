@@ -1,6 +1,7 @@
 function [proj, angles] = ImgOrient(proj, angles)
 % image reorienation
 % angles output should be in radian
+% BUG! in this code: not working properly in all trajectories (directions)
 % Date: 2021-06-08
 % Author: Yi Du, 
 % Email: yi.du@hotmail.com
