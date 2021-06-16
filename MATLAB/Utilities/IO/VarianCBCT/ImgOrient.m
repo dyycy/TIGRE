@@ -6,6 +6,7 @@ function [proj, angles] = ImgOrient(proj, angles)
 % Author: Yi Du, 
 % Email: yi.du@hotmail.com
 
+%{
 %% Part 1: Gantry Rotation Alignment
 % Clockwise
 if(angles(end) - angles(1)>0)
@@ -30,9 +31,9 @@ if(range(angles) > 270)
     angles = deg2rad(angles);
     return;
 end
+%}
 
-
-% Offset for image matrix reorientation
+%% Offset for image matrix reorientation
 GantryOffset = 20;
 
 tmp = (angles(1) + GantryOffset)/90;

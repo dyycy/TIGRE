@@ -67,3 +67,4 @@ MATLAB/2020-06-12_231835/
 *.mat
 MATLAB/Ref_data/
 *.nrrd
+MATLAB/Utilities/IO/VarianCBCT/BH_SpectrumBowtieLUT_deprecated.m

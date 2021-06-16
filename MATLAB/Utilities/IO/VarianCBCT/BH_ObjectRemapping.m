@@ -70,8 +70,8 @@ g = gpuDevice(1);
 reset(g);
 
 % gpuArray preparation
-proj_BH = single(zeros(size(projlg)));
-gproj_BH = zeros(size(proj_BH), 'gpuArray');
+% proj_BH = single(zeros(size(projlg)));
+% gproj_BH = zeros(size(proj_BH), 'gpuArray');
 gprojlg = gpuArray(projlg);
 
 gsl = gpuArray(BHCalib.bowtie.sl);
@@ -92,11 +92,11 @@ for ii = 1: nRow
         % proj_signal_LUT = interp1(gsl, gLUT, tl_v, 'spline');
         proj_signal_LUT = interp1(gsl, gLUT, tl_v);
         % gproj_BH(ii, jj, :) = interp1(proj_signal_LUT, object_sl, gprojlg(:,jj,:), 'spline');
-        gproj_BH(ii, jj, :) = interp1(proj_signal_LUT, gobj_sl, gprojlg(ii,jj,:));
+        gprojlg(ii, jj, :) = interp1(proj_signal_LUT, gobj_sl, gprojlg(ii,jj,:));
     end
 end
 
-proj_BH = gather(gproj_BH);
+proj_BH = gather(gprojlg);
 
 % GPU reset
 g = gpuDevice(1);

@@ -4,9 +4,7 @@ function proj = ZeroAnomoly(proj)
 proj(isnan(proj)) = 0;
 proj(isinf(proj)) = 0;
 
-% all negative to zeros
+%% Set all negative to zeros
 proj(proj<0) = 0;
 
-
 end
-

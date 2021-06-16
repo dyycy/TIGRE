@@ -43,7 +43,8 @@ for ii = 1:proj_no
         if(count==1)
             projinfo{count} = ReadXim(ximfilename, 0);
     		angles(count) = rtn;
-        	proj(:,:,count) = double(page');
+        	proj(:,:,count) = rot90(double(page), -1);
+            
             airnorm(count) = double(projinfo{count}.properties.KVNormChamber);
             count = count + 1;
         else
@@ -54,7 +55,7 @@ for ii = 1:proj_no
             if(thd)
                 if(abs(rtn-angles(end))>thd)
                     angles(count) = rtn;
-                    proj(:,:,count) = double(page');
+                	proj(:,:,count) = rot90(double(page), -1);
                     airnorm(count) = double(projinfo{count}.properties.KVNormChamber);
                     count = count + 1;
                 else
@@ -62,7 +63,7 @@ for ii = 1:proj_no
                 end
             else
                 angles(count) = rtn;
-                proj(:,:,count) = double(page');
+            	proj(:,:,count) = rot90(double(page), -1);
                 airnorm(count) = double(projinfo{count}.properties.KVNormChamber);
                 count = count + 1;
             end

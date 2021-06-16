@@ -45,7 +45,7 @@ end
 if(Version == 2.0)
     filename = fullfile(blkfilestr.folder, blkfilestr.name);
     tmp = ReadXim(filename);
-    Blk = double(tmp.pixel_data);
+    Blk = rot90(double(tmp.pixel_data), -1);
     Sec = [];
     BlkAirNorm = double(tmp.properties.KVNormChamber);
     return;
@@ -56,7 +56,7 @@ if(Version == 2.7)
     for ii = 1:length(blkfilestr)
         filename = fullfile(blkfilestr(ii).folder, blkfilestr(ii).name);
         tmp = mexReadXim(filename);
-        Blk(:,:,ii) = double(tmp');
+        Blk(:,:,ii) = rot90(double(tmp), -1);
         tmp = ReadXim(filename, 0);
         BlkAirNorm(ii) = double(tmp.properties.KVNormChamber);
         % GantryRtn
