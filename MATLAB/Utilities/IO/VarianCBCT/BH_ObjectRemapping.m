@@ -72,7 +72,7 @@ reset(g);
 % gpuArray preparation
 % proj_BH = single(zeros(size(projlg)));
 % gproj_BH = zeros(size(proj_BH), 'gpuArray');
-gprojlg = gpuArray(projlg);
+gprojlg = gpuArray(single(projlg));
 
 gsl = gpuArray(BHCalib.bowtie.sl);
 gLUT = gpuArray(calibLUT);
@@ -96,7 +96,7 @@ for ii = 1: nRow
     end
 end
 
-proj_BH = gather(gprojlg);
+proj_BH = double(gather(gprojlg));
 
 % GPU reset
 g = gpuDevice(1);

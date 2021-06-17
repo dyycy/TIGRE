@@ -54,8 +54,14 @@ hd = a0*( a1* exp(-a2 * grid) + a3 * (exp( -a4 * ( grid - a5).^3 )));
 % normalized to 4% SPR coverage
 hd = CoverSPR/sum(hd(:)) .* hd;
 
+%% GPU based
+% reset(gpuDevice(1));
+gproj = gpuArray(single(proj));
+
 %% 2D Convolution with downsampling and upsampling
 for ii = 1:size(proj,3)
+    % CPU version
+    %{
     page = interp2(uu, vv, proj(:,:,ii), duu, dvv);
     % gross scatter distribution
     sc = conv2(page, hd, 'same');
@@ -64,7 +70,22 @@ for ii = 1:size(proj,3)
     scpage = interp2(duu, dvv, sc, uu, vv, 'spline');
     % primary = measure - scatter
     proj(:,:,ii) = proj(:,:,ii) - scpage;
+    %}
+    
+    % GPU version
+    page = interp2(uu, vv, gproj(:,:,ii), duu, dvv);
+    % gross scatter distribution
+    sc = gather(conv2(page, hd, 'same'));
+    % upsample the scatter distribution to the same grid level as the
+    % measured intensity
+    scpage = interp2(duu, dvv, sc, uu, vv, 'spline');
+    % primary = measure - scatter
+    gproj(:,:,ii) = gproj(:,:,ii) - scpage;
 end
+
+proj = double(gather(gproj));
+% Reset GPU
+reset(gpuDevice(1));
 
 %% Cutoff for over-correction
 proj(proj<0) = NaN;

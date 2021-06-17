@@ -8,6 +8,9 @@ function [proj_lg, geo, angles] = VarianDataLoader(datafolder, varargin)
 % Author: Yi Du (yi.du@hotmail.com)
 % datafolder = '~/your_data_path/varian/2020-01-01_123456/';
 
+%% GPU initialization
+reset(gpuDevice(1));
+
 %% Input Parser
 % ACDC: acceleration & deceleration correction (default: true)
 % DPS: Detector Point Spread correction (default: true)
@@ -27,37 +30,53 @@ if(tag_ACDC)
 end
 
 %% Load proj and angles
+disp('Loading Proj: ')
+tic
 [proj, angles, airnorm] = ProjLoader(datafolder,thd);
+toc
 % Detector point scatter correction
+
+disp('Proj DPS: ')
+tic
 if(tag_DPS)
     proj = DetectorPointScatterCorrection(proj, geo);
 end
+toc
 
 %% Load blank scan
+disp('Loading Blk: ')
+tic
 [Blk, Sec, BlkAirNorm] = BlkLoader(datafolder);
+toc
 % Detector point scatter correction
+disp('Blk DPS: ')
+tic
 if(tag_DPS)
     Blk = DetectorPointScatterCorrection(Blk, geo);
 end
-
+toc
 %% Scatter Correction
+tic
 if(tag_SC)
     disp('Scatter correction onging: ')
     proj = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
     disp('Scatter correction is completed.')
 end
-
+toc
 %% Airnorm and Logarithmic Normalization
+tic
 proj_lg = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm);
 disp('Log Normalization is completed.')
-
+toc
 % remove anomolies
 proj_lg = ZeroAnomoly(proj_lg); 
 
 %% Beam Hardening correction is applied (kind of slow)
+tic
 if(tag_BH)
-    [proj_lg, BHCalib] = BHCorrection(datafolder, geo, ScanXML, proj_lg);
+    [proj_lg, ~] = BHCorrection(datafolder, geo, ScanXML, proj_lg);
 end
+toc
 %% Remove anomalies
 proj_lg = ZeroAnomoly(proj_lg); 
 

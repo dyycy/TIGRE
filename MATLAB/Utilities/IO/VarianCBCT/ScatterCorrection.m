@@ -81,6 +81,8 @@ for ii = 1: size(proj, 3)
 
     % Is initialization
     Is = zeros(size(page));
+    comp1 = zeros(size(page));
+    comp2 = zeros(size(page));
     
     %% Iterative Correction
     for jj = 1: niter
@@ -107,8 +109,8 @@ for ii = 1: size(proj, 3)
         % mm -> cm
         thickness = thickness * mm2cm;
         %% n-group summation
-        comp1 = zeros(size(page));
-        comp2 = zeros(size(page));
+        % original version: not fast enough
+        %{
         for kk = 1: ngroup
             %% 2D fft
             comp1 = comp1 + fft2(page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);
@@ -118,6 +120,15 @@ for ii = 1: size(proj, 3)
         %% real components cutoff
         comp1 = real(ifft2(comp1));
         comp2 = real(ifft2(comp2));
+        %}
+        term1 = repmat(page,[1,1, ngroup]).*nmask.*cfactor;
+        term2 = fft2(gform.* repmat(ASG, [1,1, ngroup]));
+        
+        tmp1 = sum(fft2(term1).*term2,3);
+        tmp2 = sum(fft2(repmat(thickness, [1,1, ngroup]).* term1).*term2,3);
+        
+        comp1 = real(ifft2(tmp1));
+        comp2 = real(ifft2(tmp2));        
         %% fASKS scatter correction
         Is = (1 - gamma .*thickness).*comp1 + gamma.*comp2; 
         %sum(sum(Is_prv - Is))
