@@ -11,6 +11,12 @@ function [proj_lg, geo, angles] = VarianDataLoader(datafolder, varargin)
 %% GPU initialization
 reset(gpuDevice(1));
 
+%%
+tag_ACDC =1
+tag_DPS =1
+tag_SC =1
+tag_BH =1
+
 %% Input Parser
 % ACDC: acceleration & deceleration correction (default: true)
 % DPS: Detector Point Spread correction (default: true)
@@ -26,7 +32,7 @@ thd = 0;
 if(tag_ACDC)
     angular_interval = str2double(ScanXML.Acquisitions.Velocity.Text)...
         ./str2double(ScanXML.Acquisitions.FrameRate.Text);
-    thd = angular_interval *0.95;
+    thd = angular_interval *0.9;
 end
 
 %% Load proj and angles

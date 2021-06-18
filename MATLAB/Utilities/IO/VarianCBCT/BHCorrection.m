@@ -6,6 +6,12 @@ disp('Beam Hardening Correction is on-going: be patient... ');
 
 % Key calibration information
 BHCalib = BHCalibFromXML(datafolder, ScanXML);
+
+%->
+% Precompute filter attenuated spectrum
+BHCalib = BH_SpectrumFilter(geo, BHCalib);
+%->
+
 % Precompute bowtie attenuated spectra
 BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
 % Build reference object (water) attanuation LUT

@@ -69,7 +69,7 @@ else
     end
 end
 
-proj = double(gather(gproj));
+proj = gather(gproj);
 % GPU clear
 reset(gpuDevice(1));
 end

@@ -17,6 +17,9 @@ tmp = xml2struct(srcfilename);
 BHCalibXML = tmp.Calibration;
 
 %% Restructure BHCalibXML: spectrum data
+% Energy Bin Wid
+BHCalibXML.BHCalib.energybin = str2double(BHCalibXML.CalibrationResults.EnergyBinWidth.Text);
+
 for ii =1:length(BHCalibXML.CalibrationResults.Spectra.SpectrumProperties)
     % scan voltage
     tf = strcmpi(ScanXML.Acquisitions.Voltage.Text, BHCalibXML.CalibrationResults.Spectra.SpectrumProperties{ii}.Voltage.Text);
@@ -35,6 +38,8 @@ for ii =1:length(BHCalibXML.CalibrationResults.Spectra.SpectrumProperties)
     break;
     end
 end
+
+BHCalibXML.BHCalib.source.kV = 1:BHCalibXML.BHCalib.energybin:BHCalibXML.BHCalib.voltage;
 
 %% Restructure BHCalibXML: Filter type and thickness
 for ii =1:length(BHCalibXML.CalibrationResults.Filters.FilterProperties)
@@ -92,8 +97,6 @@ BHCalibXML.BHCalib.object.delta = str2double(BHCalibXML.CalibrationResults.Objec
 
 %% Restructure BHCalibXML:  material coefficient database
 % attenuation coeeficient: /mm
-BHCalibXML.BHCalib.energybin = str2double(BHCalibXML.CalibrationResults.EnergyBinWidth.Text);
-
 for ii =1:length(BHCalibXML.CalibrationResults.Materials.MaterialProperties)
     % Filter material
     filter_tf = strcmpi(BHCalibXML.BHCalib.filter.material, BHCalibXML.CalibrationResults.Materials.MaterialProperties{ii}.Id.Text);
