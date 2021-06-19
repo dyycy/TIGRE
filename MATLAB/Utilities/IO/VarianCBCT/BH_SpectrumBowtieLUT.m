@@ -80,15 +80,13 @@ for ii = 1:length(sl)
     atten_tab(ii,:) = exp(-sl(ii).* BHCalib.bowtie.ac');
 end
 
-%%%%%%%%%%%%%%%->>>>>>>>>>>>>>>>>>>>>>
 % kVp
-kVp = length(BHCalib.source.spec);
+kVp = length(BHCalib.filter.spec);
 % miu
 BHCalib.object.ac =BHCalib.object.ac(1:kVp);
 %% bowtie-attenuated spectra look-up table
 % specLUT(sampling length, energy bin)
-BHCalib.bowtie.specLUT = atten_tab(:,1:kVp).*BHCalib.source.spec;
-%%%%%%%%%%%%%%%%%%%->>>>>>>>>>>>>>>
+BHCalib.bowtie.specLUT = atten_tab(:,1:kVp).*BHCalib.filter.spec;
 
 %% sampling length
 BHCalib.bowtie.sl = sl;

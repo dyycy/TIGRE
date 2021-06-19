@@ -1,4 +1,4 @@
-function proj = ZeroAnomoly(proj)
+function proj = EnforcePositive(proj)
 %% Remove anomalies
 % in case of NaN or Inf
 proj(isnan(proj)) = 0;

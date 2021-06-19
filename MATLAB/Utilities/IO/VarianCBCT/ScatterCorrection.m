@@ -56,6 +56,7 @@ ASG = SC_ASGkernel(sccalib, geo, dus, dvs);
 gamma = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.ObjectScatterFit.gamma.Text);
 % unit: cm-> mm
 mm2cm =  1/10;
+
 % gamma = gamma * unit_cvt;
 
 %% iteration number

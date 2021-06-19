@@ -1,29 +1,24 @@
-function [outputArg1,outputArg2] = BH_SpectrumFilter(inputArg1,inputArg2)
+function BHCalib = BH_SpectrumFilter(BHCalib)
 %BH_SPECTRUMFILTER Summary of this function goes here
 %   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
 
-
-
+% No filter at all
+if(contains(BHCalib.filter.name,'None'))
+    BHCalib.filter.spec = BHCalib.source.spec;
+    return;
+end
+    
+% filter thickness
+thickness = BHCalib.filter.thickness;
+% miu
+ac = BHCalib.filter.ac;
 
 % I/I_0 = exp(- length * miu): dependent on incident energy
-for ii = 1:length(sl)
-    atten_tab(ii,:) = exp(-sl(ii).* BHCalib.bowtie.ac');
-end
+atten = exp(-thickness.*ac);
+BHCalib.filter.spec = BHCalib.source.spec .*atten(1:length(BHCalib.source.spec));
 
-%%%%%%%%%%%%%%%->>>>>>>>>>>>>>>>>>>>>>
-% kVp
-kVp = length(BHCalib.source.spec);
-% miu
-BHCalib.object.ac =BHCalib.object.ac(1:kVp);
-%% bowtie-attenuated spectra look-up table
-% specLUT(sampling length, energy bin)
-BHCalib.bowtie.specLUT = atten_tab(:,1:kVp).*BHCalib.source.spec;
-%%%%%%%%%%%%%%%%%%%->>>>>>>>>>>>>>>
-
-
-
+% normalized the filtered spectrum
+BHCalib.filter.spec = BHCalib.filter.spec./max(BHCalib.filter.spec);
 
 end
 

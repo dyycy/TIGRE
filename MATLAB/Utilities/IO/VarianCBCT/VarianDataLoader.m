@@ -11,11 +11,11 @@ function [proj_lg, geo, angles] = VarianDataLoader(datafolder, varargin)
 %% GPU initialization
 reset(gpuDevice(1));
 
-%%
-tag_ACDC =1
-tag_DPS =1
-tag_SC =1
-tag_BH =1
+%% 
+% tag_ACDC =1;
+% tag_DPS =1;
+% tag_SC =1;
+% tag_BH =1;
 
 %% Input Parser
 % ACDC: acceleration & deceleration correction (default: true)
@@ -75,7 +75,7 @@ proj_lg = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm);
 disp('Log Normalization is completed.')
 toc
 % remove anomolies
-proj_lg = ZeroAnomoly(proj_lg); 
+proj_lg = EnforcePositive(proj_lg); 
 
 %% Beam Hardening correction is applied (kind of slow)
 tic
@@ -84,7 +84,7 @@ if(tag_BH)
 end
 toc
 %% Remove anomalies
-proj_lg = ZeroAnomoly(proj_lg); 
+proj_lg = EnforcePositive(proj_lg); 
 
 %% mediant filtering along colume-orth
 proj_lg = medfilt_col(proj_lg);
