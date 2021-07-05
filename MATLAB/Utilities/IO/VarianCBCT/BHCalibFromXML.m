@@ -148,8 +148,24 @@ for ii =1:length(BHCalibXML.CalibrationResults.Materials.MaterialProperties)
         BHCalibXML.BHCalib.bone.ac = ac;
     end
     
-    % Scitillator material for further correction (to do)
-    % un-identifiable of the scitilator
+    % Scitillator material for detection response (PaxScan 4030CB: CsI: Ti)
+    scintillator_tf = contains(BHCalibXML.CalibrationResults.Materials.MaterialProperties{ii}.Id.Text, 'cesium', 'IgnoreCase', true);
+    if(scintillator_tf)
+        ac = [];
+        % detector scintillator material
+        BHCalibXML.BHCalib.scintillator.material = BHCalibXML.CalibrationResults.Materials.MaterialProperties{ii}.Id.Text;   
+
+        % CsI thickness: this parameter is not important at all.
+        BHCalibXML.BHCalib.scintillator.thickness = 0.6;   
+        
+        % attenuation coefficients: /mm
+        tmp = cell2mat(BHCalibXML.CalibrationResults.Materials.MaterialProperties{ii}.EnergyAbsorptionCoefficient.float);
+        for jj = 1:length(tmp)
+            ac(jj) = str2double(tmp(jj).Text);
+        end
+        % energy absorption coefficient
+        BHCalibXML.BHCalib.scintillator.ac = ac;
+    end
     
 end
 

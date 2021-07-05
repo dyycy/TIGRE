@@ -1,4 +1,4 @@
-function proj = DetectorPointScatterCorrection(proj, geo)
+function proj = DetectorPointScatterCorrection(proj, geo, ScCalib)
 %% Detector Point Scatter Correction
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % Date: 2021-03-26
@@ -6,17 +6,28 @@ function proj = DetectorPointScatterCorrection(proj, geo)
 
 %% Empirical values from reference paper
 % unit: cm-2
-% a0 = 3.43;
+% a0 = 3.43; (in refrence paper, but incorrect)
 a0 = 1;
 
 a1 = 0.000309703536035;
+a1 = str2double(ScCalib.CalibrationResults.Globals.DetectorScatterModel.PScFit0.Text);
+
 % unit: cm-1
 a2 = 0.546566915157327;
+a2 = str2double(ScCalib.CalibrationResults.Globals.DetectorScatterModel.PScFit1.Text);
+
+% unit: cm-1
 a3 = 0.311272841141691;
+a3 = str2double(ScCalib.CalibrationResults.Globals.DetectorScatterModel.PScFit2.Text);
+
 % unit: cm-1
 a4 = 0.002472148007134;
-a5 = -12.6606856375944;
+a4 = str2double(ScCalib.CalibrationResults.Globals.DetectorScatterModel.PScFit3.Text);
 
+a5 = -12.6606856375944;
+a5 = str2double(ScCalib.CalibrationResults.Globals.DetectorScatterModel.PScFit4.Text);
+
+% for amplitude normalization
 CoverSPR = 0.04;
 
 % unit: mm
@@ -27,9 +38,9 @@ us = ((-geo.nDetector(1)/2+0.5):1:(geo.nDetector(1)/2-0.5))*geo.dDetector(1) + o
 vs = ((-geo.nDetector(2)/2+0.5):1:(geo.nDetector(2)/2-0.5))*geo.dDetector(2) + offset(2);
 % unit mm - > cm
 % unit converter: 1/10 for mm-> cm
-unit_cvt = 1/10;
-us = us * unit_cvt;
-vs = vs * unit_cvt;
+mm2cm = 1/10;
+us = us * mm2cm;
+vs = vs * mm2cm;
 
 %% Downsampling
 % about 10 mm in axial direction
@@ -50,6 +61,8 @@ dvs = decimate(vs, ds_rate);
 grid = sqrt(duu.^2 + dvv.^2);
 % a0 is the normalization factor
 hd = a0*( a1* exp(-a2 * grid) + a3 * (exp( -a4 * ( grid - a5).^3 )));
+
+% a0 = CoverSPR/sum(hd(:));
 
 % normalized to 4% SPR coverage
 hd = CoverSPR/sum(hd(:)) .* hd;

@@ -11,12 +11,6 @@ function [proj_lg, geo, angles] = VarianDataLoader(datafolder, varargin)
 %% GPU initialization
 reset(gpuDevice(1));
 
-%% 
-% tag_ACDC =1;
-% tag_DPS =1;
-% tag_SC =1;
-% tag_BH =1;
-
 %% Input Parser
 % ACDC: acceleration & deceleration correction (default: true)
 % DPS: Detector Point Spread correction (default: true)
@@ -26,6 +20,11 @@ reset(gpuDevice(1));
 
 %% Load geometry
 [geo, ScanXML] = GeometryFromXML(datafolder);
+
+%% Load Scatter Correction Calibration Parameter Structure
+if(tag_DPS || tag_SC)
+    ScCalib = ScCalibFromXML(datafolder);
+end
 
 %% Remove over-sampled projections due to acceleration and deceleration
 thd = 0;
@@ -37,74 +36,52 @@ end
 
 %% Load proj and angles
 disp('Loading Proj: ')
-tic
 [proj, angles, airnorm] = ProjLoader(datafolder,thd);
-toc
 % Detector point scatter correction
-
-disp('Proj DPS: ')
-tic
 if(tag_DPS)
-    proj = DetectorPointScatterCorrection(proj, geo);
+    disp('Proj DPS: ')
+    proj = DetectorPointScatterCorrection(proj, geo, ScCalib);
 end
-toc
 
 %% Load blank scan
 disp('Loading Blk: ')
-tic
 [Blk, Sec, BlkAirNorm] = BlkLoader(datafolder);
-toc
 % Detector point scatter correction
-disp('Blk DPS: ')
-tic
 if(tag_DPS)
-    Blk = DetectorPointScatterCorrection(Blk, geo);
+    disp('Blk DPS: ')
+    Blk = DetectorPointScatterCorrection(Blk, geo, ScCalib);
 end
-toc
 %% Scatter Correction
-tic
 if(tag_SC)
     disp('Scatter correction onging: ')
-    proj = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo);
+    proj = ScatterCorrection(ScCalib, Blk, BlkAirNorm, proj, airnorm, geo);
     disp('Scatter correction is completed.')
 end
-toc
+
 %% Airnorm and Logarithmic Normalization
-tic
 proj_lg = LogNormal(proj, angles, airnorm, Blk, Sec, BlkAirNorm);
 disp('Log Normalization is completed.')
-toc
 % remove anomolies
 proj_lg = EnforcePositive(proj_lg); 
 
 %% Beam Hardening correction is applied (kind of slow)
-tic
 if(tag_BH)
     [proj_lg, ~] = BHCorrection(datafolder, geo, ScanXML, proj_lg);
 end
-toc
+
 %% Remove anomalies
 proj_lg = EnforcePositive(proj_lg); 
 
 %% mediant filtering along colume-orth
 proj_lg = medfilt_col(proj_lg);
 
-%% Gantry and Image Rotation correction: not required at all!!!
-%{
-[proj_lg, angles] = ImgOrient(proj_lg, angles);
-%}
-
 %% double to single
 proj_lg = single(proj_lg);
 angles = deg2rad(angles);
 
-% imgFDK = FDK(proj_lg, geo, angles);
-% BUG! in cropCBCT
-% imcroped=cropCBCT(imgFDK, geo);
+%
+disp('Data processing is complete! Ready for reconstruction: ')
 
-%% Audio signal 
-%load train;
-%sound(y,Fs)
 end
 
 
@@ -115,6 +92,7 @@ p = inputParser;
 addParameter(p,'acdc', true);
 addParameter(p,'dps', true);
 addParameter(p,'sc', true);
+% BH performance is very lame for unclear reason
 addParameter(p,'bh', false);
 
 %execute

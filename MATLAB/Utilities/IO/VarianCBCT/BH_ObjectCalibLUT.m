@@ -31,23 +31,27 @@ end
 %}
 
 %% Energy Flux based calibration
+% scintillator energy absorption coefficient
+scintillator_ac = BHCalib.scintillator.ac(1: length(miu));
+scintillator_thick = BHCalib.scintillator.thickness;
+
 % bowtie thickness - > spectrum
 for ii = 1: length(BHCalib.bowtie.sl)    
     % object thickness -> [min_bowtie_thickness: max_bowtie_thickness]
     spec = specLUT(ii,:);
     
-    % incident energy flux
-    flux_0 = sum(BHCalib.source.kV .*spec);
+    % incident energy fluence
+    fluence_0 = sum(BHCalib.source.kV .*spec .*scintillator_ac.*scintillator_thick);
     
     for jj = 1:length(object_sl)
-        % non-ideal attenuated signal
+        % attenuated spectram 
         tmp = spec .* exp(-object_sl(jj).* miu);
         
-        % attenuated energy flux
-        flux_1 = sum(BHCalib.source.kV .*tmp);
+        % attenuated energy fluence
+        fluence_1 = sum(tmp .*BHCalib.source.kV .*scintillator_ac.*scintillator_thick);
         
         % nonlinear BH projection
-        calibLUT(ii,jj) = -log(flux_1/flux_0);
+        calibLUT(ii,jj) = -log(fluence_1/fluence_0);
     end
 end
 %% non ideal projection signal LUT: [bowtie.sl, object_sl]

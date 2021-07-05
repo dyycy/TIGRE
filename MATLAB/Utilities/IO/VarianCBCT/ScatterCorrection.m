@@ -1,4 +1,4 @@
-function prim = ScatterCorrection(datafolder, Blk, BlkAirNorm, proj, airnorm, geo)
+function prim = ScatterCorrection(ScCalib, Blk, BlkAirNorm, proj, airnorm, geo)
 % Scatter Correction Module
 % Reference: Improved scatter correction using adaptive scatter kernel superposition
 % No downsampling or upsampling is involved in current version
@@ -33,27 +33,27 @@ step_dv = mean(diff(dvs));
 [dugd, dvgd] = meshgrid(dus,dvs); %detector
 
 %% Load Scatter Calibration
-sccalib = ScCalibFromXML(datafolder);
+% ScCalib = ScCalibFromXML(datafolder);
 
 %% Blk scan
 sBlk = sum(Blk, 3);
 sAirNorm = sum(BlkAirNorm);
 
 %% n-thickness group number and boundaries
-ngroup = length(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel);
+ngroup = length(ScCalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel);
 nbounds = [];
 
 for ii=1:ngroup
     % unit: mm
-    tmp = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{ii}.Thickness.Text);
+    tmp = str2double(ScCalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{ii}.Thickness.Text);
     nbounds = [nbounds, tmp];
 end
 
 %% k(y): anti-scatter grid kernel
-ASG = SC_ASGkernel(sccalib, geo, dus, dvs);
+ASG = SC_ASGkernel(ScCalib, geo, dus, dvs);
 
 %% Component Weights: gamma (gamma = 0 for SKS)
-gamma = str2double(sccalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.ObjectScatterFit.gamma.Text);
+gamma = str2double(ScCalib.CalibrationResults.ObjectScatterModels.ObjectScatterModel{1}.ObjectScatterFit.gamma.Text);
 % unit: cm-> mm
 mm2cm =  1/10;
 
@@ -91,37 +91,25 @@ for ii = 1: size(proj, 3)
         Is_prv = Is;
         
         % estimate thickness: mm
-        thickness = SC_ThicknessEstimator(blk, page, sccalib, step_du, step_dv);
+        thickness = SC_ThicknessEstimator(blk, page, ScCalib, step_du, step_dv);
         % smooth thickness
-        thickness = SC_SmoothThickness(thickness, sccalib, step_du, step_dv);
+        thickness = SC_SmoothThickness(thickness, ScCalib, step_du, step_dv);
         
         % Ri(x,y): group-based masks
         nmask = SC_GroupMask(thickness, ngroup, nbounds);
 
         % gi(x,y): group-based form function
-        gform = SC_FormFunc(sccalib, dugd, dvgd);
+        gform = SC_FormFunc(ScCalib, dugd, dvgd);
         
         % edge response function: about 7.5 cm inward
         edgewt = SC_EdgeResponse(thickness);
         
         % cei(x,y): group-based amplitude factors
-        cfactor = SC_AmplitudeFactor(blk, page, edgewt, sccalib);
+        cfactor = SC_AmplitudeFactor(blk, page, edgewt, ScCalib);
         
         % mm -> cm
         thickness = thickness * mm2cm;
         %% n-group summation
-        % original version: not fast enough
-        %{
-        for kk = 1: ngroup
-            %% 2D fft
-            comp1 = comp1 + fft2(page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);
-            %% 2D fft
-            comp2 = comp2 + fft2(thickness.*page.*nmask(:,:,kk).*cfactor(:,:,kk)) .* fft2(gform(:,:,kk).*ASG);            
-        end
-        %% real components cutoff
-        comp1 = real(ifft2(comp1));
-        comp2 = real(ifft2(comp2));
-        %}
         term1 = repmat(page,[1,1, ngroup]).*nmask.*cfactor;
         term2 = fft2(gform.* repmat(ASG, [1,1, ngroup]));
         

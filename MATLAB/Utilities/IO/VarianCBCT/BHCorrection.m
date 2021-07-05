@@ -12,6 +12,11 @@ BHCalib = BH_SpectrumFilter(BHCalib);
 
 % Precompute bowtie attenuated spectra
 BHCalib = BH_SpectrumBowtieLUT(geo, BHCalib);
+if(~isstruct(BHCalib))
+    disp('BH correction is skipped.');
+    return;
+end
+
 % Build reference object (water) attanuation LUT
 BHCalib = BH_ObjectCalibLUT(BHCalib);
 % BH correction via reference object (water)

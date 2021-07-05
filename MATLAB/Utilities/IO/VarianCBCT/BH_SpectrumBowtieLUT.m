@@ -29,9 +29,22 @@ zzgd = linspace(-20, 20, 502);
 
 bt_img = zeros(length(xxgd), length(yygd));
 
-%% Fitting: Smoothing Spline 
+%% Fitting: first fitting(linear)
 [xData, yData] = prepareCurveData(BHCalib.bowtie.uu, BHCalib.bowtie.thickness);
+% Set up fittype and options.
+ft = fittype( 'poly1' );
+% Fit model to data.
+[~, gof] = fit( xData, yData, ft );
+if( gof.rsquare < 0.995)
+    disp('It seems that BH correction is not required at all');
+    typein = input('Continue BH correction? Y or N (recommended): ', 's');
+    if(contains(typein, 'n', 'IgnoreCase', true))
+        BHCalib = NaN;
+        return;
+    end
+end
 
+%% Fitting: Smoothing Spline 
 % Set up fittype and options.
 ft = fittype( 'smoothingspline' );
 

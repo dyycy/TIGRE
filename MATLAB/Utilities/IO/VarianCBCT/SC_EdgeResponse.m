@@ -6,7 +6,7 @@ function edgewt = SC_EdgeResponse(thickness)
 % Date: 2021-05-24
 
 
-% Emperical Value
+% Emperical Thickness Threshold for Edge Segementation
 edgewt = double(imbinarize(thickness, 50));
 tmpmask = edgewt;
 h = fspecial('average', [25, 25]);
