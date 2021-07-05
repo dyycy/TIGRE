@@ -157,7 +157,9 @@ for ii=1:niter
         geo.rotDetector=rotDetector;
         errornow=im3Dnorm(proj(:,:,index_angles)-Ax(res,geo,angles,'gpuids',gpuids),'L2');                       % Compute error norm2 of b-Ax
         % If the error is not minimized.
-        if  ii~=1 && errornow>errorL2(end)
+%        if  ii~=1 && errornow>errorL2(end)
+        % To Enforce at least 5 iterations before getting into the convergence condition
+        if  ii>5 && errornow>errorL2(end)
             if verbose
                 disp(['Convergence criteria met, exiting on iteration number:', num2str(ii)]);
             end
@@ -166,7 +168,7 @@ for ii=1:niter
         errorL2=[errorL2 errornow];
     end
     
-    if (ii==1 && verbose==1);
+    if (ii==1 && verbose==1)
         expected_time=toc*niter;
         disp('SART_TV');
         disp(['Expected duration   :    ',secs2hms(expected_time)]);
